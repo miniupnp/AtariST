@@ -45,9 +45,9 @@ buffersize equ 65536
 	move.l a0,bufferp
 
 	move.l a0,d0
-	jsr printlhex(pc)
+	bsr printlhex
 	lea crlf(pc),a0
-	jsr (a5)
+	jsr (a5)	; _cconws
 
 	; initial load
 	move.l bufferp(pc),-(sp)	; address
@@ -57,14 +57,14 @@ buffersize equ 65536
 	trap	#1
 	lea 12(sp),sp
 	
-	jsr printlhex(pc)
+	bsr printlhex
 	lea crlf(pc),a0
-	jsr _cconws(pc)
+	jsr (a5)	; _cconws
 
 	pea       setdma       ; Offset 2
-	move.w    #38,-(sp)    ; Offset 0
+	move.w    #38,-(sp)    ; Supexec
 	trap      #14          ; Call XBIOS
-	addq.l    #6,sp        ; Correct stack
+	addq.l    #6,sp
 
 	move.l	bufferp(pc),d5
 	addi.l	#buffersize,d5
@@ -80,9 +80,9 @@ mainloop:
 	bne		stop
 
 	pea	getdmasoundpos
-	move.w    #38,-(sp)    ; Offset 0
+	move.w    #38,-(sp)    ; Supexec
 	trap      #14          ; Call XBIOS
-	addq.l    #6,sp        ; Correct stack
+	addq.l    #6,sp
 
 	;move.l	d0,-(sp)
 	;jsr printlhex(pc)
@@ -93,7 +93,7 @@ mainloop:
 	cmp.l	d0,d5
 	bge	mainloop
 
-	jsr printlhex(pc)
+	bsr printlhex
 	lea lowbufread(pc),a0
 	jsr (a5)
 
@@ -115,16 +115,16 @@ waitloop2:
 	bne.s	stop
 
 	pea	getdmasoundpos
-	move.w    #38,-(sp)    ; Offset 0
+	move.w    #38,-(sp)    ; Supexec
 	trap      #14          ; Call XBIOS
-	addq.l    #6,sp        ; Correct stack
+	addq.l    #6,sp
 
 	cmp.l	d0,d5
 	blt		waitloop2
 
-	jsr printlhex(pc)
+	bsr printlhex
 	lea hibufread(pc),a0
-	jsr (a5)
+	jsr (a5)	; _cconws
 
 	;load next !
 	move.l d5,-(sp)	; address
@@ -137,9 +137,9 @@ waitloop2:
 	beq		mainloop
 
 endoffile:
-	jsr	printlhex
+	bsr	printlhex
 	lea	endoffilemsg(pc),a0
-	jsr	(a5)
+	jsr	(a5)	; _cconws
 
 	; TODO
 	; wait for the last few samples to be played
@@ -147,9 +147,9 @@ endoffile:
 
 stop:
 	pea	stopdmasound
-	move.w    #38,-(sp)    ; Offset 0
+	move.w    #38,-(sp)    ; Supexec
 	trap      #14          ; Call XBIOS
-	addq.l    #6,sp        ; Correct stack
+	addq.l    #6,sp
 
 closefile:
 	move	d6,-(sp)
@@ -187,12 +187,12 @@ openerr:
 	jmp (a5)
 
 readerr:
-	jsr (a5)
+	jsr (a5)	; _cconws
 	move	d6,-(sp)
 	move	#62,-(sp)	; Fclose
 	trap	#1
 	addq.l	#4,sp
-	move.l	#-1,d6
+	move.l	#-1,d6	; return error
 	rts
 	
 openfile:
@@ -340,12 +340,12 @@ setdma:
 	clr.b    $FFFF8901.w;DMA OFF
 	; SET DMA playback
 	move.l   bufferp(pc),d1
-	lea		$FFFF8902.w,a0
+	lea		$FFFF8902.w,a0	; start address
 	bsr.s	setdmaaddrsub
 
 	move.l   bufferp(pc),d1
 	add.l	#buffersize*2,d1
-	lea		12(a0),a0	;$FFFF890E.w,a0
+	lea		12(a0),a0	;$FFFF890E.w,a0	; end address
 	bsr.s	setdmaaddrsub
 
 	move.l	samplerate(pc),d1
@@ -422,11 +422,11 @@ msgmagic:
 msgheadersize:
 	dc.b	$d,$a,"header size: ",0
 msgencoding:
-	dc.b	$d,$a,"encoding:    ",0
+	dc.b	" bytes",$d,$a,"encoding:    ",0
 msgsamplerate:
 	dc.b	$d,$a,"sample rate: ",0
 msgnchannels:
-	dc.b	$d,$a,"chan count:  ",0
+	dc.b	" Hz",$d,$a,"chan count:  ",0
 ;filename:
 	;dc.b	"DEFAULT.AU",0
 	;dc.b	"SURFIUSA.AU",0
