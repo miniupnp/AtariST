@@ -9,7 +9,18 @@ buffersize equ 65536
 	lea msg1(pc),a0
 	jsr (a5)	;bsr _cconws
 
-	; TODO : detect the machine (ST / STE / TT / Falcon / etc.)
+	; detect the machine (ST / STE / TT / Falcon / etc.)
+	move.l	#'_MCH',d6
+	pea		get_cookie(pc)
+	move	#38,-(sp)	; Supexec
+	trap	#14			; XBIOS
+	addq.l	#6,sp
+	cmp.l	#-1,d0		; no cookie jar or no cookie found
+	beq		is_st
+	swap	d0
+	tst		d0
+	beq		is_st
+	; if not ST, the machine is STE or better (all have DMA sound ?)
 
 	;lea filename(pc),a0
 	move	#47,-(sp)	; Fgetdta
@@ -149,7 +160,12 @@ closefile:
 end:
 	bsr.s	presskey
 	clr -(sp)
-	trap #1
+	trap #1		;Pterm0
+
+is_st:
+	lea		stmsg(pc),a0
+	bsr.s	_cconws
+	bra.s	end
 
 presskey:
 	;lea	presskey_txt(pc),a0
@@ -364,6 +380,21 @@ stopdmasound:
 	clr.b    $FFFF8901.w;DMA OFF
 	rts
 
+get_cookie:
+	move.l	$5a0.w,d0	; _p_cookies
+	beq.s	gcknf
+	move.l	d0,a0
+gcknx:	move.l	(a0)+,d0	; cookie name
+	beq.s	gcknf
+	cmp.l	d6,d0
+	beq.s	gckf
+	addq.l	#4,a0
+	bra.s	gcknx
+gckf:	move.l	(a0)+,d0	; cookie value
+	rts
+gcknf:	moveq	#-1,d0
+	rts
+
 	; ---- data section
 	data
 hexdigits:
@@ -403,6 +434,8 @@ msgnchannels:
 	;dc.b	"EVRYBREA.AU",0
 openerrmsg:
 	dc.b	"Error opening file",$d,$a,0
+stmsg:
+	dc.b	"Sorry, only STE+ machines with DMA are",$d,$a,"supported.",$d,$a,0
 printbuffer:
 	dc.b	"00000000"
 printbufferend:
