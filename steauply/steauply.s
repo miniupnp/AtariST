@@ -9,6 +9,8 @@ buffersize equ 65536
 	lea msg1(pc),a0
 	jsr (a5)	;bsr _cconws
 
+	; TODO : detect the machine (ST / STE / TT / Falcon / etc.)
+
 	;lea filename(pc),a0
 	move	#47,-(sp)	; Fgetdta
 	trap	#1
@@ -127,6 +129,10 @@ endoffile:
 	jsr	printlhex
 	lea	endoffilemsg(pc),a0
 	jsr	(a5)
+
+	; TODO
+	; wait for the last few samples to be played
+	; before calling stopdmasound
 
 stop:
 	pea	stopdmasound
