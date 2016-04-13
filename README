@@ -1,0 +1,15 @@
+Various Atari ST/STE code
+
+I bought myself a CosmosEx and started to play !
+http://joo.kie.sk/cosmosex
+
+I use vasm to assemble 68000 code :
+http://sun.hasenbraten.de/vasm/
+built with motorola syntax :
+$ make CPU=m68k SYNTAX=mot
+
+steauply:
+    Audio player for Atari STE machines, using DMA
+    to play 8bit signed PCM encoded .AU files.
+
+Thomas Bernard

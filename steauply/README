@@ -1,0 +1,24 @@
+                STEAUPLY
+
+8b signed PCM .AU player for Atari STE
+(c) 2016 nanard
+
+This audio player uses STE DMA sound to
+play 8bit signed PCM audio data at the
+4 possible rates :
+50066Hz / 25033Hz / 12517Hz / 6258Hz
+Any .AU file will be played at the
+closest of theses 4 sample rates.
+Mono and stereo are supported.
+
+Standard GEMDOS Fopen/Fread are used to
+get the data from disk.
+
+In order to convert your audio files to
+the right format, I advise you the SoX
+tool : http://sox.sourceforge.net/
+
+usage example :
+$ sox input.mp3 -r 50066 -b 8 \
+ -e signed-integer ouput.au
+
