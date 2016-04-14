@@ -53,7 +53,7 @@ BYTE acsi_cmd(BYTE ReadNotWrite, BYTE *cmd, BYTE cmdLength, BYTE *buffer, WORD s
 		}
 	}
 	
-	/* wr1 and wr2 are defined so we could toggle R/W bit and then setup Read / Write operation */ 
+	/* wr1 and wr2 are defined so we could toggle R/W bit and then setup Read / Write operation */
 	if(ReadNotWrite==1) {						
 		wr1 = DMA_WR;
 		wr2 = 0;
@@ -63,12 +63,12 @@ BYTE acsi_cmd(BYTE ReadNotWrite, BYTE *cmd, BYTE cmdLength, BYTE *buffer, WORD s
 	}
 
     *dmaAddrMode = wr1 | NO_DMA | SC_REG;  		/* clear FIFO = toggle R/W bit */
-    *dmaAddrMode = wr2 | NO_DMA | SC_REG;          /* and select sector count reg */ 
+    *dmaAddrMode = wr2 | NO_DMA | SC_REG;          /* and select sector count reg */
 
     *dmaAddrSectCnt = sectorCount;				/* write sector cnt to DMA device */
     *dmaAddrMode = wr2 | NO_DMA | HDC | A0;        /* select DMA data register again */
 
-    *dmaAddrData = cmd[cmdLength - 1];      		/* transfer the last command byte */             
+    *dmaAddrData = cmd[cmdLength - 1];      		/* transfer the last command byte */
     *dmaAddrMode = wr2;                         	/* start DMA transfer */
 
     status = endcmd(wr2 | NO_DMA | HDC | A0);   /* wait for DMA completion */
@@ -81,29 +81,29 @@ BYTE acsi_cmd(BYTE ReadNotWrite, BYTE *cmd, BYTE cmdLength, BYTE *buffer, WORD s
     // create header
     sendCharSerial(0xfe);
     sendCharSerial(ReadNotWrite);
-    
+
     WORD i;
     for(i=0; i<cmdLength; i++) {
         sendCharSerial(cmd[i]);
     }
-    
+
     for(i=0; i<(14-cmdLength); i++) {
         sendCharSerial(0);
     }
-    
+
     sendCharSerial(cmdLength);
     sendCharSerial(sectorCount >> 8);
     sendCharSerial(sectorCount);
-    
+
     BYTE *pBfr;
 
     // now read or write the data
     if(ReadNotWrite) {
         int cnt = sectorCount * 512;
         pBfr = buffer;
-        
+
         waitForMarker();
-        
+
         for(i=0; i<cnt; i++) {
             BYTE res = getCharSerial(&pBfr[i]);
 
@@ -114,17 +114,17 @@ BYTE acsi_cmd(BYTE ReadNotWrite, BYTE *cmd, BYTE cmdLength, BYTE *buffer, WORD s
     } else {
         int cnt = sectorCount * 512;
         pBfr = buffer;
-    
+
         for(i=0; i<cnt; i++) {
             sendCharSerial(pBfr[i]);
         }
-        
+
         waitForMarker();
     }
-    
+
     BYTE status;
     getCharSerial(&status);
-    
+
     return status;
 #endif
 }
@@ -136,10 +136,10 @@ void waitForMarker(void)
     while(1) {
         BYTE marker = 0;
         getCharSerial(&marker);
-        
+
         if(marker == 0xfe) {
             break;
-        }        
+        }
     }
 }
 
@@ -147,12 +147,12 @@ void sendCharSerial(BYTE val)
 {
     while(1) {
         BYTE res = Bcostat(DEVICE_ID);
-        
+
         if(res != 0) {
             break;
         }
     }
-    
+
     Bconout(DEVICE_ID, val);
 }
 
@@ -163,19 +163,19 @@ BYTE getCharSerial(BYTE *val)
     while(1) {                              // wait while the device is able to provide data
 /*
         DWORD now = getTicks();
-                
+
         if((now - start) > 100) {           // if it takes more than 0.5 seconds
             *val = 0;
             return FALSE;                   // fail
         }
-*/            
+*/
         BYTE stat = Bconstat(DEVICE_ID);      // get device status
-            
+
         if(stat != 0) {                     // can receive? break
             break;
         }
     }
-          
+
     *val = Bconin(DEVICE_ID);                 // get it
     return TRUE;                               // success
 }
@@ -237,17 +237,17 @@ BYTE wait_dma_cmpl(DWORD t_ticks)
 {
 	DWORD now, until;
 	BYTE gpip;
-     
+
 	now = *HZ_200;
 	until = t_ticks + now;   			/* calc value timer must get to */
-	                                            
+	
 	while(1) {
 		gpip = *mfpGpip;
 		
 		if ((gpip & IO_DINT) == 0) {	/* Poll DMA IRQ interrupt */
 			return OK;                 	/* got interrupt, then OK */
 		}
-                           
+
 		now = *HZ_200;
 		
 		if(now >= until) {

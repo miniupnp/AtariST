@@ -27,7 +27,7 @@
     #define DWORD 	uint32_t
 #endif
 
-/* mfp chip register */ 
+/* mfp chip register */
 #define mfpGpip			((volatile BYTE *) 0xFFFA01)
 
 /* DMA chip registers and flag */
@@ -61,8 +61,8 @@
 #define SC_NOT_0     0x0002     /* Sector count register not zero */
 #define DATA_REQ     0x0004     /* DRQ line state */
 
-#define FLOCK      ((volatile WORD  *) 0x043E) /* Floppy lock variable */ 
-#define HZ_200     ((volatile DWORD *) 0x04BA) /* 200 Hz system clock */ 
+#define FLOCK      ((volatile WORD  *) 0x043E) /* Floppy lock variable */
+#define HZ_200     ((volatile DWORD *) 0x04BA) /* 200 Hz system clock */
 
 #define ACSI_READ	1
 #define ACSI_WRITE	0
@@ -83,7 +83,7 @@ BYTE acsi_cmd(BYTE ReadNotWrite, BYTE *cmd, BYTE cmdLength, BYTE *buffer, WORD s
 
 #ifdef ONPC
 
-typedef struct 
+typedef struct
 {
     BYTE ReadNotWrite;
     BYTE cmd[14];

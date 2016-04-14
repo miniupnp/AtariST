@@ -67,12 +67,12 @@ int strncmp ( const char * str1, const char * str2, int num )
 			continue;
 		}
 
-		if(str1[i] == 0 && str2[i] != 0) {	// 1st string terminated, 2nd string continues? 
-			return -1; 
+		if(str1[i] == 0 && str2[i] != 0) {	// 1st string terminated, 2nd string continues?
+			return -1;
 		}
 		
-		if(str1[i] != 0 && str2[i] == 0) {	// 1st string continues, 2nd string terminated? 
-			return 1; 
+		if(str1[i] != 0 && str2[i] == 0) {	// 1st string continues, 2nd string terminated?
+			return 1;
 		}
 		
 		if(str1[i] > str2[i]) {

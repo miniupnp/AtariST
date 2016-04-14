@@ -1,6 +1,6 @@
 /* (c) 2016 Thomas Bernard */
 /* Atari ACSI device scanning program */
-#include <mint/osbind.h> 
+#include <mint/osbind.h>
 #include <string.h>
 
 #include "acsi.h"
@@ -10,14 +10,14 @@
 /* Prototypes */
 static BYTE findDevice(void);
 static void getDriveConfig(void);
-static int getConfig(void); 
+static int getConfig(void);
 static BYTE ce_identify(BYTE id);
 
 /* global variables */
 BYTE deviceID;
 
 BYTE commandShort[CMD_LENGTH_SHORT]	= {			0, 'C', 'E', HOSTMOD_TRANSLATED_DISK, 0, 0};
-BYTE commandLong[CMD_LENGTH_LONG]	= {0x1f,	0, 'C', 'E', HOSTMOD_TRANSLATED_DISK, 0, 0, 0, 0, 0, 0, 0, 0}; 
+BYTE commandLong[CMD_LENGTH_LONG]	= {0x1f,	0, 'C', 'E', HOSTMOD_TRANSLATED_DISK, 0, 0, 0, 0, 0, 0, 0, 0};
 
 DWORD myBuffer[512];
 BYTE *pBuffer;
@@ -43,7 +43,7 @@ extern WORD _installed;
 extern WORD _vblskipscreen;
 extern WORD _vblskipconfig;
 
-const char *version = __DATE__; 
+const char *version = __DATE__;
 
 /*--------------------------------------------------*/
 int main(void)
@@ -51,14 +51,14 @@ int main(void)
 	void *OldSP;
 
 	pBuffer = (BYTE *)myBuffer;
-	OldSP = (void *) Super((void *)0);  /* supervisor mode */ 
-  
+	OldSP = (void *) Super((void *)0);  /* supervisor mode */
+
 	/*Clear_home();*/
 
-	(void) Cconws("\33p[ nanard ACSI test :) ]\r\n[ ver "); 
+	(void) Cconws("\33p[ nanard ACSI test :) ]\r\n[ ver ");
     (void) Cconws(version);
     (void) Cconws(" ]\33q\r\n"); 		
-    WORD currentDrive = Dgetdrv();	/* get the current drive from system */ 
+    WORD currentDrive = Dgetdrv();	/* get the current drive from system */
 	(void)Cconws("Current Drive : ");
 	Cconout('A' + currentDrive);
 	(void)Cconws("\r\n");
@@ -78,8 +78,8 @@ int main(void)
 	commandLong[0] = (deviceID << 5) | 0x1f;			/* cmd[0] = ACSI_id + ICD command marker (0x1f)	*/
 	commandLong[1] = 0xA0;								/* cmd[1] = command length group (5 << 5) + TEST UNIT READY (0) */ 	
 
-    getDriveConfig();                                     /* get translated disk configuration */ 
-    if(ceTranslatedDriveMap & (1 << currentDrive)) { /* did we start from translated drive? */ 
+    getDriveConfig();                                     /* get translated disk configuration */
+    if(ceTranslatedDriveMap & (1 << currentDrive)) { /* did we start from translated drive? */
         (void)Cconws("Started from a Translated Drive\r\n");
 	}
 
@@ -94,17 +94,17 @@ BYTE ce_identify(BYTE ACSI_id)
 {
   WORD res;
   BYTE cmd[] = {0, 'C', 'E', HOSTMOD_TRANSLATED_DISK, TRAN_CMD_IDENTIFY, 0};
-  
+
   cmd[0] = (ACSI_id << 5); 					/* cmd[0] = ACSI_id + TEST UNIT READY (0)	*/
   memset(pBuffer, 0, 512);              	/* clear the buffer */
 
   res = acsi_cmd(1, cmd, 6, pBuffer, 1);	/* issue the identify command and check the result */
-    
+
   if(res != OK)                         	/* if failed, return FALSE */
     return 0;
 
   (void)Cconws("\r\n  ");
-  (void)Cconws((const char *)pBuffer); 
+  (void)Cconws((const char *)pBuffer);
   if(strncmp((char *) pBuffer, "CosmosEx translated disk", 24) != 0) {		/* the identity string doesn't match? */
 	 return 0;
   }
@@ -177,26 +177,26 @@ BYTE findDevice()
 		(void)Cconws("IDL .vendor.======model=====-rev\r\n");
 		for(i=0; i<8; i++) {
 			Cconout('0' + i);
-		      
+		
 			scan_device(i);
 			res = ce_identify(i);      					/* try to read the IDENTITY string */
-			(void) Cconws("\r\n"); 
-      
+			(void) Cconws("\r\n");
+
 			if(res == 1) {                           	/* if found the CosmosEx */
 				id = i;                     		/* store the ACSI ID of device */
 			}
 		}
-  
+
 		if(id != 0xff) {                     		/* if found, break */
 			break;
 		}
-      
+
 		(void)Cconws("CosmosEx Not found.\r\nPress any key to retry or 'Q' to quit.\r\n");
 		if(((Cnecin() & 0xff) | 0x20) == 'q') {
 			return -1;
 		}
 	}
-  
+
 	(void)Cconws("\r\nCosmosEx ACSI ID: ");
 	Cconout('0' + id);
 	(void)Cconws("\r\n\r\n");
@@ -212,15 +212,15 @@ void getDriveConfig(void)
 int getConfig(void)
 {
     WORD res;
-    
+
 	commandShort[0] = (deviceID << 5); 					                        // cmd[0] = ACSI_id + TEST UNIT READY (0)
 	commandShort[4] = GD_CUSTOM_getConfig;
-  
+
 	res = acsi_cmd(ACSI_READ, commandShort, CMD_LENGTH_SHORT, pBuffer, 1);		// issue the command and check the result
-    
+
     if(res != OK) {                                                             // failed to get config?
         return -1;
     }
 	return 0;
-} 
+}
 

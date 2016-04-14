@@ -157,7 +157,7 @@ DWORD writeData(BYTE ceHandle, BYTE *bfr, DWORD cnt);
 		
 // The following macros are used to convert atari handle numbers which are WORDs
 // to CosmosEx ex handle numbers, which are only BYTEs; and back.
-// To mark the difference between normal Atari handle and handle which came 
+// To mark the difference between normal Atari handle and handle which came
 // from CosmosEx I've added some offset to CosmosEx handles.
 
 // CosmosEx file handle:              0 ...  40
