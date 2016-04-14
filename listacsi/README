@@ -1,0 +1,9 @@
+listasci
+
+list devices attached to the ACSI port
+of the Atari.
+
+To compile, you need the "cross-mint"
+toolchain :
+http://vincent.riviere.free.fr/soft/m68k-atari-mint/
+
