@@ -80,7 +80,7 @@ int main(void)
 
     getDriveConfig();                                     /* get translated disk configuration */ 
     if(ceTranslatedDriveMap & (1 << currentDrive)) { /* did we start from translated drive? */ 
-        (void)Cconws("Start from a Translated Drive\r\n");
+        (void)Cconws("Started from a Translated Drive\r\n");
 	}
 
     (void)Cconin();
@@ -116,21 +116,31 @@ BYTE ce_identify(BYTE ACSI_id)
 void scan_device(BYTE id)
 {
 	int i;
-	BYTE cmd[CMD_LENGTH_SHORT] = {0,0,0,0,0,0};
+	BYTE cmd[CMD_LENGTH_SHORT];
+	BYTE lun;
 
-	cmd[0] = id << 5;	/* TEST UNIT READY */
-	memset(pBuffer, 0, 512);
-	if(acsi_cmd(1, cmd, 6, pBuffer, 1) != OK)
-		return;
-	Cconout(' ');
+	for (lun = 0; lun < 8; lun++) {
+		memset(cmd, 0, CMD_LENGTH_SHORT);
+		cmd[0] = id << 5;	/* TEST UNIT READY */
+		cmd[1] = lun << 5;
+		memset(pBuffer, 0, 512);
+		if(acsi_cmd(1, cmd, 6, pBuffer, 1) != OK)
+			return;
+		if(lun > 0) {
+			(void)Cconws("\r\n");
+			Cconout('0'+id);
+		}
+		Cconout(',');
+		Cconout('0'+lun);
+		Cconout(' ');
 
-	cmd[0] = (id << 5) | 0x12;	/* INQUIRY */
-	cmd[4] = 0xff;
-	memset(pBuffer, 0, 512);
-	if(acsi_cmd(1, cmd, 6, pBuffer, 1) != OK) {
-		(void)Cconws(" ***INQUIRY ERROR***");
-		return;
-	}
+		cmd[0] = (id << 5) | 0x12;	/* INQUIRY */
+		cmd[4] = 0xff;
+		memset(pBuffer, 0, 512);
+		if(acsi_cmd(1, cmd, 6, pBuffer, 1) != OK) {
+			(void)Cconws(" ***INQUIRY ERROR***");
+			return;
+		}
 	/* http://www.tldp.org/HOWTO/archived/SCSI-Programming-HOWTO/SCSI-Programming-HOWTO-9.html
 	 * offset length
 	 *      0      1   type
@@ -143,13 +153,14 @@ void scan_device(BYTE id)
 	 *     32      4    Rev
 	 */
 	/*(void)Cconws(pBuffer + 8);*/
-	for(i = 8; i < 36; i++) {
-		Cconout(pBuffer[i] <= 32 ? '.' : pBuffer[i]);
+		for(i = 8; i < 36; i++) {
+			Cconout(pBuffer[i] <= 32 ? '.' : pBuffer[i]);
+		}
+		(void)Cconws(" SCSI");
+		Cconout('0' + pBuffer[2]);
+		Cconout(' ');
+		Cconout('0' + pBuffer[0]);
 	}
-	(void)Cconws(" SCSI v");
-	Cconout('0' + pBuffer[2]);
-	Cconout(' ');
-	Cconout('0' + pBuffer[0]);
 }
 
 
@@ -158,12 +169,12 @@ BYTE findDevice()
 {
 	BYTE i;
 	BYTE res;
-	BYTE id = 0;
+	BYTE id = 0xff;
 
 	(void)Cconws("Scanning ACSI devices :\r\n");
 
 	for(;;) {
-		(void)Cconws("ID.vendor.======model=====-rev\r\n");
+		(void)Cconws("IDL .vendor.======model=====-rev\r\n");
 		for(i=0; i<8; i++) {
 			Cconout('0' + i);
 		      
@@ -176,7 +187,7 @@ BYTE findDevice()
 			}
 		}
   
-		if(res == 1) {                             		/* if found, break */
+		if(id != 0xff) {                     		/* if found, break */
 			break;
 		}
       
