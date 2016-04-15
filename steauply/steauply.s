@@ -137,19 +137,45 @@ waitloop2:
 	beq		mainloop
 
 endoffile:
+	move.l -4(sp),a4	; address of last Fread
+	move.l d0,-(sp)		; push Fread byte count
 	bsr	printlhex
 	lea	endoffilemsg(pc),a0
 	jsr	(a5)	; _cconws
+	move.l (sp)+,d0		; pop Fread byte count
 
-	; TODO
+	lea (a4,d0.l),a0
+	move.l a0,d4
+	move.l #buffersize-1,d1
+	sub.l d0,d1
+padloop:
+	move.b #0,(a0)+		; pad end of half buffer with 0
+	dbra d1,padloop
+
+	;move.l a4,d0
+	;bsr	printlhex
+	;lea	crlf(pc),a0
+	;jsr	(a5)	; _cconws
+
 	; wait for the last few samples to be played
 	; before calling stopdmasound
+waitend:
+	pea	getdmasoundpos
+	move.w    #38,-(sp)    ; Supexec
+	trap      #14          ; Call XBIOS
+	addq.l    #6,sp
+
+	cmp.l	d0,d4
+	blt		waitend
 
 stop:
 	pea	stopdmasound
 	move.w    #38,-(sp)    ; Supexec
 	trap      #14          ; Call XBIOS
 	addq.l    #6,sp
+
+	lea	stoppedmsg(pc),a0
+	jsr	(a5)	; _cconws
 
 closefile:
 	move	d6,-(sp)
@@ -411,6 +437,8 @@ encodingerrmsg:
 	dc.b	"Only encoding 2 is supported : signed 8bits PCM",$d,$a,0
 playmsg:
 	dc.b	"Press any key to stop",$d,$a,0
+stoppedmsg:
+	dc.b	"Playback stopped",$d,$a,0
 endoffilemsg:
 	dc.b	" End of file reached    ",$d,$a,0
 lowbufread:
