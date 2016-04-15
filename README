@@ -12,4 +12,9 @@ steauply:
     Audio player for Atari STE machines, using DMA
     to play 8bit signed PCM encoded .AU files.
 
+listacsi:
+    List ACSI devices connected on the Machine.
+    Displays result of Inquiry commands. Also detect
+    CosmosEx translated disk interface.
+
 Thomas Bernard
