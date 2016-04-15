@@ -265,11 +265,46 @@ openfile:
 	lea msgsamplerate(pc),a0
 	bsr _cconws
 	move.l samplerate(pc),d0
-	bsr.s printwdec
+	bsr printwdec
 	lea msgnchannels(pc),a0
 	jsr (a5) ;bsr.s _cconws
 	move.l nchannel(pc),d0
+	bsr printwdec
+
+	move.l	datasize(pc),d4
+	bmi	.nolength
+	lea playtime(pc),a0
+	jsr (a5) ;bsr.s _cconws
+	move.l nchannel(pc),d0
+	cmpi.l #1,d0
+	beq .ismono
+	lsr.l #1,d4
+.ismono:
+	move.l	samplerate(pc),d0
+	divu.w	d0,d4
+	moveq.l #0,d1
+	move.w	d4,d1	; quotient = total seconds
+	divu.w #60,d1
+	move.w	d1,d0	; minutes
+	bsr printwdec
+	pea	$0002003a	; 0x3a=':'
+	trap #1 		; Cconout
+	addq.l #4,sp
+	swap	d1
+	move.w	d1,d0	; seconds
+	bsr printwdec
+	pea	$0002002e	; 0x2e='.'
+	trap #1 		; Cconout
+	addq.l #4,sp
+	swap	d4		; samples reminder
+	move.l	samplerate(pc),d1
+	;mulu.w	#100,d4		; to get 1/100th seconds
+	mulu.w	#1000,d4	; to get milliseconds
+	divu.w	d1,d4
+	move.w	d4,d0
 	bsr.s printwdec
+.nolength:
+
 	lea crlf(pc),a0
 	jsr (a5) ;bsr.s _cconws
 
@@ -455,6 +490,8 @@ msgsamplerate:
 	dc.b	$d,$a,"sample rate: ",0
 msgnchannels:
 	dc.b	" Hz",$d,$a,"chan count:  ",0
+playtime:
+	dc.b	$d,$a,"duration:    ",0
 ;filename:
 	;dc.b	"DEFAULT.AU",0
 	;dc.b	"SURFIUSA.AU",0
