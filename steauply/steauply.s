@@ -1,7 +1,18 @@
 ; 8bit signed PCM .AU player for Atari STE
 ; (c) 2016 nanard
 ; https://github.com/miniupnp/AtariST
+
 buffersize equ 65536
+
+	; MACRO(S) DEFINITION(S)
+	macro supexec
+	pea		\1(pc)
+	move	#38,-(sp)	; Supexec
+	trap	#14			; XBIOS
+	addq.l	#6,sp
+	endm
+
+	; CODE ENTRY POINT
 	code
 
 	lea _cconws(pc),a5	; we call this function a lot
@@ -11,10 +22,7 @@ buffersize equ 65536
 
 	; detect the machine (ST / STE / TT / Falcon / etc.)
 	move.l	#'_MCH',d6
-	pea		get_cookie(pc)
-	move	#38,-(sp)	; Supexec
-	trap	#14			; XBIOS
-	addq.l	#6,sp
+	supexec	get_cookie
 	cmp.l	#-1,d0		; no cookie jar or no cookie found
 	beq		is_st
 	swap	d0
@@ -61,10 +69,7 @@ buffersize equ 65536
 	lea crlf(pc),a0
 	jsr (a5)	; _cconws
 
-	pea       setdma       ; Offset 2
-	move.w    #38,-(sp)    ; Supexec
-	trap      #14          ; Call XBIOS
-	addq.l    #6,sp
+	supexec	setdma
 
 	move.l	bufferp(pc),d5
 	addi.l	#buffersize,d5
@@ -79,10 +84,7 @@ mainloop:
 	tst.w	d0	; DEV_READY (-1) if char is available / DEV_BUSY (0) if not
 	bne		stop
 
-	pea	getdmasoundpos
-	move.w    #38,-(sp)    ; Supexec
-	trap      #14          ; Call XBIOS
-	addq.l    #6,sp
+	supexec	getdmasoundpos
 
 	;move.l	d0,-(sp)
 	;jsr printlhex(pc)
@@ -114,10 +116,7 @@ waitloop2:
 	tst.w	d0
 	bne.s	stop
 
-	pea	getdmasoundpos
-	move.w    #38,-(sp)    ; Supexec
-	trap      #14          ; Call XBIOS
-	addq.l    #6,sp
+	supexec	getdmasoundpos
 
 	cmp.l	d0,d5
 	blt		waitloop2
@@ -160,19 +159,13 @@ padloop:
 	; wait for the last few samples to be played
 	; before calling stopdmasound
 waitend:
-	pea	getdmasoundpos
-	move.w    #38,-(sp)    ; Supexec
-	trap      #14          ; Call XBIOS
-	addq.l    #6,sp
+	supexec	getdmasoundpos
 
 	cmp.l	d0,d4
 	blt		waitend
 
 stop:
-	pea	stopdmasound
-	move.w    #38,-(sp)    ; Supexec
-	trap      #14          ; Call XBIOS
-	addq.l    #6,sp
+	supexec	stopdmasound
 
 	lea	stoppedmsg(pc),a0
 	jsr	(a5)	; _cconws
