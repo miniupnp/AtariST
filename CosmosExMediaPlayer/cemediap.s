@@ -330,6 +330,13 @@ openstream:
 	bsr	sendacsicmd
 	move.b	d0,streamid		; backup stream id
 
+	; wait 1 second
+	move.l	$4ba,d0		; 200 Hz System clock
+	addi.l	#200,d0
+.waitloop
+	cmp.l	$4ba,d0
+	bcc		.waitloop
+
 	lea	acsicmd(pc),a0
 	move.b	#2,4(a0)	; command getStreamInfo
 	move.b	streamid(pc),5(a0)	; stream id
@@ -337,7 +344,17 @@ openstream:
 	move.l	a1,d1
 	moveq	#1,d2		; sector count
 	moveq	#0,d3		; read
-	;bsr	sendacsicmd
+	bsr	sendacsicmd
+
+	; wait 1 second
+	move.l	$4ba,d0		; 200 Hz System clock
+	addi.l	#200,d0
+.waitloop2
+	cmp.l	$4ba,d0
+	bcc		.waitloop2
+
+	rts
+
 
 	; ===================== ACSI/DMA =======================
 	; sendacsicmd a0 = cmd
@@ -396,7 +413,8 @@ sendacsicmd:
 	move.w	d3,d0			; DMA MODE <=  wr_flag (start DMA transfer)
 	move.l	d0,(a2)			; DMA DATA + DMA MODE
 
-	bsr.s	.waitdma
+	move.w	#32000,d0
+	bsr.s	.waitdma2
 	;move.w	#$18a,2(a2)	; DMA MODE <= DMA_WR | NO_DMA | HDC | A0
 	ori.w	#$08a,d3
 	move.w	d3,2(a2)	; DMA MODE <=  wr_flag | NO_DMA | HDC | A0
@@ -410,8 +428,9 @@ sendacsicmd:
 	rts
 
 .waitdma:
-	lea		$fffffa01.w,a3
 	move.w	#15000,d0
+.waitdma2:
+	lea		$fffffa01.w,a3
 .waitdmaloop:
 	btst	#5,(a3)
 	btst	#5,(a3)
