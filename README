@@ -17,4 +17,9 @@ listacsi:
     Displays result of Inquiry commands. Also detect
     CosmosEx translated disk interface.
 
+CosmosExMediaPlayer:
+    Media player for CosmosEx. Sends special ACSI commands
+    to the CosmosEx to get suitable data.
+    Audio support at the moment.
+
 Thomas Bernard
