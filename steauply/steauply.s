@@ -26,7 +26,7 @@ buffersize equ 65536
 	cmp.l	#-1,d0		; no cookie jar or no cookie found
 	beq		is_st
 	swap	d0
-	tst		d0
+	tst.w	d0
 	beq		is_st
 	; if not ST, the machine is STE or better (all have DMA sound ?)
 
