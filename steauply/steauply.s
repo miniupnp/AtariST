@@ -5,7 +5,7 @@
 buffersize equ 65536
 
 	; MACRO(S) DEFINITION(S)
-	macro supexec
+	macro supexec		; 1 argument : subroutine address
 	pea		\1(pc)
 	move	#38,-(sp)	; Supexec
 	trap	#14			; XBIOS
@@ -97,7 +97,7 @@ mainloop:
 
 	bsr printlhex
 	lea lowbufread(pc),a0
-	jsr (a5)
+	jsr (a5)	; _cconws
 
 	;load next !
 	move.l bufferp(pc),-(sp)	; address
