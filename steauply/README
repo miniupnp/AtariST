@@ -22,3 +22,9 @@ usage example :
 $ sox input.mp3 -r 50066 -b 8 \
  -e signed-integer ouput.au
 
+ffmpeg can also be used. It is faster
+but do not put metadata in header :
+$ ffmpeg -i 'input.mp3' -ar 25033 \
+ -f au -c pcm_s8 -ac 1 output.au
+
+https://ffmpeg.org/
