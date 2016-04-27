@@ -21,6 +21,15 @@ flock	equ	$43e
 	lea msg(pc),a0
 	bsr _cconws
 
+	; set parameters
+	lea	openparams,a4
+	move.l	#'CEMP',(a4)+	; signature
+	move.w	#1,(a4)+		; audio rate : 25033
+	move.w	#25033,(a4)+
+	move.w	#2,(a4)+		; force Mono
+	move.w	#0,(a4)+		; false
+	move.w	#$ff,(a4)+		; path / url
+
 	; Build full file path for argument !
 	move	#47,-(sp)	; Fgetdta
 	trap	#1
@@ -43,7 +52,7 @@ flock	equ	$43e
 	lea	crlf(pc),a0
 	bsr _cconws
 
-	lea	fullpath(pc),a1
+	move.l a4,a1
 	move.w	(sp)+,d0	; pop relative/absolute flag
 	bge		.absolute
 
@@ -72,8 +81,8 @@ flock	equ	$43e
 	move.l	(sp)+,a0	; push command line addr
 	bsr		nndmemcpy
 
-	; now fullpath is filled
-	lea	fullpath(pc),a0
+	; now path is filled
+	move.l	a4,a0
 	bsr _cconws
 	lea	crlf(pc),a0
 	bsr _cconws
@@ -314,7 +323,7 @@ closestream:
 	lea	acsicmd(pc),a0
 	move.b	#4,4(a0)	; command closeStream
 	move.b	streamid(pc),5(a0)	; stream id
-	lea	fullpath(pc),a1
+	lea	openparams(pc),a1
 	move.l	a1,d1
 	moveq	#1,d2		; sector count
 	moveq	#0,d3		; read
@@ -323,7 +332,7 @@ closestream:
 	; open media stream
 openstream:
 	lea	acsicmd(pc),a0
-	lea	fullpath(pc),a1
+	lea	openparams(pc),a1
 	move.l	a1,d1
 	moveq	#1,d2		; sector count
 	move.w	#$100,d3	; write
@@ -543,7 +552,7 @@ acsicmd:
 
 	bss
 	align 2
-fullpath:
+openparams:
 	ds.b	512
 infoheader:
 magic:
