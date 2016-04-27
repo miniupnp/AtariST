@@ -323,11 +323,13 @@ closestream:
 	lea	acsicmd(pc),a0
 	move.b	#4,4(a0)	; command closeStream
 	move.b	streamid(pc),5(a0)	; stream id
-	lea	openparams(pc),a1
-	move.l	a1,d1
-	moveq	#1,d2		; sector count
-	moveq	#0,d3		; read
-	bsr	sendacsicmd
+; TODO implement a function to send an asci command without any data
+; we are just sending crap here
+	lea	openparams(pc),a1	; XXX
+	move.l	a1,d1			; XXX
+	moveq	#1,d2		; XXX sector count
+	moveq	#0,d3		; XXX read
+	bsr	sendacsicmd		; TODO : call sendacsicmd_withoutdata
 
 	; open media stream
 openstream:

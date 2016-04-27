@@ -1,0 +1,16 @@
+CosmosEx Media Player
+(c)2016 Thomas Bernard
+
+communicate with the CosmosEx device through ACSI
+
+see :
+CosmosEx website : http://joo.kie.sk/cosmosex/
+CosmosEx application : https://github.com/atarijookie/ce-atari
+                       https://github.com/miniupnp/ce-atari/tree/mediastreaming_r
+
+
+A lot TODO :
+- Plain ST support (digitized sound through YM)
+- Use interrupts to avoid polling :
+  DMA Sound
+  DMA ACSI transfer
