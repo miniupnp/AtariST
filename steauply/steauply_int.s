@@ -360,7 +360,7 @@ printlhexloop:
 	lsr.l #4,d0
 	andi.l #$f,d1
 	move.b (a1,d1),-(a0)
-	dbra D2,printlhexloop
+	dbra d2,printlhexloop
 	;jmp (a5)
 	bra _cconws
 
@@ -372,11 +372,24 @@ loadbuffer1:
 	pea buffer1
 loadbuffer:
 	pea buffersize	; len
-	move	d6,-(sp) ; handle
-	move	#63,-(sp) ; Fread
+	move.w	d6,-(sp) ; handle
+	move.w	#63,-(sp) ; Fread
 	trap	#1
 	lea 12(sp),sp
+	cmp.l	#buffersize,d0
+	bne.s	.endoffile
 	rts
+.endoffile:
+	move.l	-4(sp),a1	; address of last fread
+	lea	(a1,d0.l),a0
+	move.l	#buffersize-1,d1
+	sub.l	d0,d1
+.padloop:
+	move.b #0,(a0)+	; pad end of half buffer with 0
+	dbra	d1,.padloop
+
+	lea	endoffilemsg,a0
+	jmp	(a5)	; _cconws
 
 	; DMA Sound functions - STE only !
 
@@ -529,10 +542,6 @@ stoppedmsg:
 	dc.b	"Playback stopped",$d,$a,0
 endoffilemsg:
 	dc.b	" End of file reached    ",$d,$a,0
-lowbufread:
-	dc.b	"  Low Half buffer played",$d,0
-hibufread:
-	dc.b	" High Half buffer played",$d,0
 msgmagic:
 	dc.b	$d,$a,"Magic:       ",0
 msgheadersize:
