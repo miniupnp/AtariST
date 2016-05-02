@@ -96,7 +96,7 @@ write_values(int bits, const unsigned char * values, const char * filename)
 	}
 	max = 1 << bits;
 	for(i = 0; i < max; i++) {
-		fprintf(f, "    dc.w $8%02x,$9%02x,$a%02x   ; %3d\n",
+		fprintf(f, "    dc.w $8%02x,$9%02x,$a%02x,0 ; %3d\n",
 		       values[0], values[1], values[2], i);
 		values += 3;
 	}
