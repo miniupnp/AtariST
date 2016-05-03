@@ -49,9 +49,43 @@ void printhexdump(const BYTE * data, unsigned long offset, unsigned long len)
 	}
 }
 
+#define STYP_BSS 0x0100
+#define STYP_TEXT 0x0200
+#define STYP_DATA 0x0400
+#define STYP_EXTERNAL 0x0800
+#define STYP_REGISTER 0x1000
+#define STYP_GLOBAL 0x2000
+#define STYP_EQUATED 0x4000
+#define STYP_DEFINED 0x8000
+#define STYP_LONGNAME 0x0048
+#define STYP_TFILE 0x0280
+#define STYP_TFARC 0x02c0
+
 int parse_symbols(const BYTE * symbols, unsigned long symbolsize)
 {
-	printhexdump(symbols, 0, symbolsize);
+	unsigned long offset;
+	//printhexdump(symbols, 0, symbolsize);
+	for(offset = 0; offset < symbolsize; offset += 14) {
+		WORD type = READWORD(symbols + offset + 8);
+		LONG address = READLONG(symbols + offset + 10);
+		printf("%06x %04x ", address, type);
+		if(type & STYP_BSS) printf("BSS  ");
+		if(type & STYP_TEXT) printf("TEXT ");
+		if(type & STYP_DATA) printf("DATA ");
+		if(type & STYP_EXTERNAL) printf("EXT ");
+		if(type & STYP_REGISTER) printf("REG ");
+		if(type & STYP_GLOBAL) printf("GLOBAL ");
+		if(type & STYP_EQUATED) printf("EQU ");
+		if(type & STYP_DEFINED) printf("DEF ");
+		if((type & STYP_TFILE) == STYP_TFILE) printf("FILE ");
+		/*if((type & STYP_TFARC) == STYP_TFARC) printf("ARCH "); collision with STYP_LONGNAME */
+		printf("%.8s", symbols + offset);
+		if((type & STYP_LONGNAME) == STYP_LONGNAME) {
+			offset += 14;
+			printf("%.14s", symbols + offset);
+		}
+		putchar('\n');
+	}
 	return 0;
 }
 
