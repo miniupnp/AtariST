@@ -22,4 +22,7 @@ CosmosExMediaPlayer:
     to the CosmosEx to get suitable data.
     Audio support at the moment.
 
+prgshow:
+    C program used to parse .PRG/.TOS/.TTP Atari TOS execuables.
+
 Thomas Bernard
