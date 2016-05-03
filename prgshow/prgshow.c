@@ -18,6 +18,43 @@
 #define WORD	uint16_t
 #define LONG	uint32_t
 
+#ifndef MIN
+#define MIN(a,b) ((a)>(b)?(b):(a))
+#endif
+
+void printhexdump(const BYTE * data, unsigned long offset, unsigned long len)
+{
+	unsigned int i;
+	while(len > 0) {
+		printf("%06lx", offset & ~15);
+		for(i = offset & 15; i > 0; i--) printf("   ");
+		i = 0;
+		do {
+			printf(" %02x", data[offset+i]);
+			i++;
+		} while(((i + offset) & 15) && (i<len));
+		while((i + offset) & 15) {
+			printf("   ");
+			i++;
+		}
+		printf(" | ");
+		for(i = offset & 15; i > 0; i--) putchar(' ');
+		do {
+			putchar(data[offset+i] < 32 || data[offset+i] >= 127 ? '.' : data[offset+i]);
+			i++;
+		} while(((i + offset) & 15) && (i < len));
+		putchar('\n');
+		offset += i;
+		len -= i;
+	}
+}
+
+int parse_symbols(const BYTE * symbols, unsigned long symbolsize)
+{
+	printhexdump(symbols, 0, symbolsize);
+	return 0;
+}
+
 int parse_fixups(const BYTE * fixups, unsigned long fixupsize,
                  const BYTE * text, unsigned long textsize)
 {
@@ -104,6 +141,9 @@ int parse_prg(const uint8_t * buffer, unsigned long size)
 	printf("fixup size: %5ld bytes\n", fixupsize);
 	if(absflags == 0) {
 		parse_fixups(fixups, fixupsize, text, tsize);
+	}
+	if(ssize > 0) {
+		parse_symbols(symb, ssize);
 	}
 	return 0;
 }
