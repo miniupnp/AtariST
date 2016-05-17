@@ -358,9 +358,9 @@ openstream:
 	bne		.return
 	move.b	d0,streamid		; backup stream id
 
-	; wait 1 second
+	; wait 2 second
 	move.l	$4ba,d0		; 200 Hz System clock
-	addi.l	#200,d0
+	addi.l	#200*2,d0
 .waitloop
 	cmp.l	$4ba,d0
 	bcc		.waitloop
