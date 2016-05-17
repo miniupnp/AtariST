@@ -53,7 +53,7 @@ generate_levels(int bits, int a1, int b1, int c1,
 					l *= ratio;
 					error = fabs(l-(double)level);
 					// erreur relative
-					error /= (1.0+(double)level);
+					//error /= (1.0+(double)level);
 					if(error < besterror) {
 						besterror = error;
 						besta = a;
