@@ -268,6 +268,7 @@ stop:
 
 	; close stream
 	supexec closestream
+	bsr printlhex
 
 end:
 	move.w	#7,-(sp)	; Crawcin
@@ -338,13 +339,7 @@ closestream:
 	lea	acsicmd(pc),a0
 	move.b	#4,4(a0)	; command closeStream
 	move.b	streamid(pc),5(a0)	; stream id
-; TODO implement a function to send an asci command without any data
-; we are just sending crap here
-	lea	openparams(pc),a1	; XXX
-	move.l	a1,d1			; XXX
-	moveq	#1,d2		; XXX sector count
-	moveq	#0,d3		; XXX read
-	bsr	sendacsicmd		; TODO : call sendacsicmd_withoutdata
+	bsr	sendacsicmdnodma
 
 	; open media stream
 openstream:
@@ -421,7 +416,7 @@ sendacsicmd:
 	swap	d0
 	move.b	#$8a,d0			; DMA MODE <= NO_DMA | HDC | A0
 	move.l	d0,(a2)			; DMA DATA + DMA MODE
-	bsr.s	.waitdma
+	bsr.s	waitdma
 	bmi.s	.timeout
 	dbra	d1,.sendcmdloop
 
@@ -446,12 +441,12 @@ sendacsicmd:
 	move.l	d0,(a2)			; DMA DATA + DMA MODE
 
 	move.w	#32000,d0
-	bsr.s	.waitdma2
+	bsr.s	waitdma2
 	;move.w	#$18a,2(a2)	; DMA MODE <= DMA_WR | NO_DMA | HDC | A0
 	ori.w	#$08a,d3
 	move.w	d3,2(a2)	; DMA MODE <=  wr_flag | NO_DMA | HDC | A0
 	move.w	(a2),d1		; read status
-	;bsr.s	.waitdma
+	;bsr.s	waitdma
 .timeout:
 	move.w	#$80,2(a2)		; NO_DMA
 	clr.w	flock
@@ -459,9 +454,9 @@ sendacsicmd:
 	move.w	d1,d0
 	rts
 
-.waitdma:
+waitdma:
 	move.w	#15000,d0
-.waitdma2:
+waitdma2:
 	lea		$fffffa01.w,a3
 .waitdmaloop:
 	btst	#5,(a3)
@@ -472,6 +467,49 @@ sendacsicmd:
 	dbra	d0,.waitdmaloop
 .waitdmaend
 	rts
+
+	; ===================== ACSI/DMA =======================
+	; sendacsicmdnodma a0 = cmd
+sendacsicmdnodma:
+.waitflock
+	tst.w	flock
+	bne.s	.waitflock
+
+	lea		$ffff8604,a2	; DMA DATA
+
+	move.w	#$88,2(a2)		; DMA MODE <= NO_DMA | HDC
+	move.b	(a0)+,d0		; cmd[0]
+	move.w	d0,(a2)
+	move.w	#$8a,2(a2)		; DMA MODE <= NO_DMA | HDC | A0
+
+	moveq	#3,d1			; 4 next command bytes !
+.sendcmdloop:
+	move.b	(a0)+,d0
+	swap	d0
+	move.b	#$8a,d0			; DMA MODE <= NO_DMA | HDC | A0
+	move.l	d0,(a2)			; DMA DATA + DMA MODE
+	bsr.s	waitdma
+	bmi.s	.timeout
+	dbra	d1,.sendcmdloop
+
+	; last byte
+	move.b	(a0)+,d0		; cmd[5]
+	move.w	d0,(a2)
+	move.w	#$0a,2(a2)		; DMA MODE <= HDC | A0
+	bsr.s	waitdma
+
+	move.w	#$8a,2(a2)		; DMA MODE <= NO_DMA | HDC | A0
+	move.w	(a2),d1		; read status
+	;bsr.s	waitdma
+.timeout:
+	move.w	#$80,2(a2)		; NO_DMA
+	clr.w	flock
+	moveq	#0,d0
+	move.w	d1,d0
+	rts
+
+
+
 
 	; =================== DMA SOUND (STE+ ONLY) =================
 setdmaaddrsub:	; set start/end address
