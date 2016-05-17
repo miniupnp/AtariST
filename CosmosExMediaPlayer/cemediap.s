@@ -83,6 +83,15 @@ flock	equ	$43e
 	move.l	(sp)+,a0	; push command line addr
 	bsr		nndmemcpy
 
+	; fill buffer with easily recognizable data
+	; to track transmission bugs :)
+	lea		openparams+512,a0
+.fillbuffer:
+	addi.b	#1,d0
+	move.b	d0,(a1)+
+	cmp.l	a1,a0
+	bne	.fillbuffer
+
 	; now path is filled
 	move.l	a4,a0
 	bsr _cconws
