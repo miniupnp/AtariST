@@ -31,10 +31,12 @@ flock	equ	$43e
 	move.w	#$ff,(a4)+		; path / url
 
 	; Build full file path for argument !
-	move	#47,-(sp)	; Fgetdta
-	trap	#1
-	addq.l	#2,sp
-	move.l	d0,a0		; dta / command line
+	;move	#47,-(sp)	; Fgetdta
+	;trap	#1
+	;addq.l	#2,sp
+	;move.l	d0,a0		; dta / command line
+	move.l	4(sp),a0	; process basepage
+	lea		128(a0),a0	; command line
 	moveq	#0,d0
 	move.b	(a0)+,d0	; command line length
 	clr.b	(a0,d0.w)	; zero byte at end of command line
