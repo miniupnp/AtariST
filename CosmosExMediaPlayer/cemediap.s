@@ -24,8 +24,9 @@ flock	equ	$43e
 	; set parameters
 	lea	openparams,a4
 	move.l	#'CEMP',(a4)+	; signature
-	move.w	#1,(a4)+		; audio rate : 25033
-	move.w	#25033,(a4)+
+	move.w	#1,(a4)+		; audio rate :
+	;move.w	#25033,(a4)+	; 25033
+	move.w	#50066,(a4)+	; 50066
 	move.w	#2,(a4)+		; force Mono
 	move.w	#0,(a4)+		; false
 	move.w	#$ff,(a4)+		; path / url
@@ -99,11 +100,14 @@ flock	equ	$43e
 	bsr _cconws
 
 	supexec	openstream
-	bsr		printlhex
+	tst.w	d0
+	beq.s	.openok
 	; stop if the open failed
+	bsr		printlhex
+	bra		end
 
+.openok
 	; display info
-	
 	lea msgmagic(pc),a0
 	bsr _cconws
 	lea magic(pc),a0
@@ -350,6 +354,8 @@ openstream:
 	moveq	#1,d2		; sector count
 	move.w	#$100,d3	; write
 	bsr	sendacsicmd
+	btst	#7,d0		; is it signed ?
+	bne		.return
 	move.b	d0,streamid		; backup stream id
 
 	; wait 1 second
@@ -367,6 +373,8 @@ openstream:
 	moveq	#1,d2		; sector count
 	moveq	#0,d3		; read
 	bsr	sendacsicmd
+	btst	#7,d0		; is it signed ?
+	bne		.return
 
 	; wait 1 second
 	move.l	$4ba,d0		; 200 Hz System clock
@@ -375,6 +383,8 @@ openstream:
 	cmp.l	$4ba,d0
 	bcc		.waitloop2
 
+	moveq.l	#0,d0		; ok
+.return
 	rts
 
 
