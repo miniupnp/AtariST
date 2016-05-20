@@ -576,8 +576,11 @@ yminit:
 	move.b	d0,$ffff8800.w
 	clr.b	$ffff8802.w
 	dbra	d0,.yminitloop
-	move.b	#7,$ffff8800
-	move.b	#%11111111,$ffff8802
+	move.b	#7,$ffff8800.w
+	;move.b	#%11111111,$ffff8802.w
+	move.b	$ffff8800.w,d0
+	ori.b	#%00111111,d0
+	move.b	d0,$ffff8802.w
 	rts
 
 	; back to silence
