@@ -1,3 +1,10 @@
 script / Makefile to build "Vincent Rivière's m68k-atari-mint cross-tools"
 
 http://vincent.riviere.free.fr/soft/m68k-atari-mint/
+
+adapted from Vincent Rivière's scripts.
+
+does not work yet.
+
+maybe I should adapt MIKRO's scripts instead :
+  https://github.com/mikrosk/m68k-atari-mint-build

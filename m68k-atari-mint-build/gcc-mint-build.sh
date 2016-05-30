@@ -17,9 +17,11 @@ if [ ! -d $PACKAGENAME$VERSION$VERSIONPATCH ]; then
 	tar jxvf "$ARCHIVES_DIR/$PACKAGENAME$VERSION.tar.bz2" || exit 1
 	mv $PACKAGENAME$VERSION $PACKAGENAME$VERSION$VERSIONPATCH
 fi
-cd $PACKAGENAME$VERSION$VERSIONPATCH
-bzcat "$ARCHIVES_DIR/$PACKAGENAME$VERSION$VERSIONPATCH.patch.bz2" |patch -p1
-cd ..
+if [ ! -f $PACKAGENAME$VERSION$VERSIONPATCH/gcc/config/m68k/mint.h ]; then
+	cd $PACKAGENAME$VERSION$VERSIONPATCH
+	bzcat "$ARCHIVES_DIR/$PACKAGENAME$VERSION$VERSIONPATCH.patch.bz2" |patch -p1
+	cd ..
+fi
 
 mkdir $PACKAGENAME$VERSION$VERSIONPATCH$VERSIONBIN
 cd $PACKAGENAME$VERSION$VERSIONPATCH$VERSIONBIN
@@ -37,12 +39,13 @@ make all-gcc || exit 1
 make all-target-libgcc || exit 1
 
 ######################################
-# Now, open another terminal window, and compile and install the MiNTlib from there.
-# Do the same with PML.
-# Then go back here.
+# compile mintlib + PML
 ######################################
-echo "TODO !!!"
-exit 1
+cd ../..
+./mintlib-mint-build.sh || exit 1
+./pml-mint-build.sh || exit 1
+cd $BUILD_DIR
+cd $PACKAGENAME$VERSION$VERSIONPATCH$VERSIONBIN
 
 # Dirty hack to fix the PATH_MAX issue.
 # The good solution would be to configure gcc using --with-headers
