@@ -51,71 +51,103 @@
 	bra.s	.loopfont
 .exitloopfont
 
-	; affichage des caracteres
-	move.w    #2,-(sp)     ; Physbase
-	trap      #14          ; XBIOS
-	addq.l    #2,sp        ;
-	move.l	d0,a6
+	pea		msg1
+	move	#9,-(sp)	; Cconws
+	trap	#1
+	addq.l	#6,sp
 
-	move.l	pFnthdr,a4
-	;move.l	0(a4),a4	; font #0 = 6x6
-	;move.l	4(a4),a4	; font #1 = 8x8
-	move.l	8(a4),a4	; font #2 = 8x16
-	move.l	72(a4),a3	; character offset table
-	move.l  76(a4),a4	; pointer to font image
-	move.l	a4,d0
-	bsr		printlhex
-	;cconout #$20
-	;move.l	pFnthdr,a4
-	;move.l	8(a4),a0	; font #2 = 8x16
-	;move.l	80(a4),d0	; width and heigth
-	;bsr		printlhex
-
+.mainloop
 	move.w	#7,-(sp)	; Crawcin
 	trap	#1
 	addq.l	#2,sp
 
-	move.l	a6,a5
+	; check key in '0'..'2'
+	cmpi.w	#'2'+1,d0
+	bcc	.exit
+	subi.w	#'0',d0
+	bcc	.keyok
+.exit
+	clr -(sp)
+	trap #1		;Pterm0
 
-	move.w	#7,d5	; 8 lignes
+.keyok
+	andi.w	#3,d0
+	add.w	d0,d0
+	add.w	d0,d0
+
+	move.l	pFnthdr,a4
+	;move.l	0(a4),a3	; font #0 = 6x6
+	;move.l	4(a4),a3	; font #1 = 8x8
+	;move.l	8(a4),a3	; font #2 = 8x16
+	move.l	(a4,d0.w),a3
+	;move.l	72(a3),a3	; character offset table
+	move.l  76(a3),a4	; pointer to font image
+	;move.l	a4,d0
+	;bsr		printlhex
+
+	; character display
+	move.w    #2,-(sp)     ; Physbase
+	trap      #14          ; XBIOS
+	addq.l    #2,sp        ;
+	;move.l	d0,a6
+	move.l	d0,a5
+
+	move.w	80(a3),d0	; font image Width
+	move.w	82(a3),d1	; font image height = character height
+	move.w	d1,d2
+	move.w	d1,d3
+	mulu.w	#160,d1		; screen pointer return offset
+	subq	#1,d1
+	mulu.w	d0,d2		; font pointer offset
+	subq	#1,d2
+	subq	#1,d3		; screen pointer line offset
+	mulu.w	#160,d3
+	add.w	#32,d3
+
+	; there is some more work to do to support the 6x6 font
+
+	move.w	#7,d5	; 8 lines
 .loopa
-	move.w	#15,d6	; 16 caracteres par ligne
+	move.w	#15,d6	; of 2*16 characters
 .loop0
-	move.w	#15,d7
+	move.w	82(a3),d7	; character height
+	subq	#1,d7
 .loop1
 	move.b  (a4),0(a5)
 	move.b  (a4),2(a5)
 	move.b  (a4),4(a5)
 	move.b  (a4),6(a5)
-	add.l	#256,a4
-	add.l	#160,a5
+	lea		(a4,d0.w),a4
+	add.l	#160,a5		; next screen line
 	dbra	d7,.loop1
-	sub.l	#2559,a5
-	sub.l	#4095,a4
+	;sub.l	#2559,a5	; 160*16-1
+	sub.l	d1,a5
+	;sub.l	#4095,a4	; 256*16-1
+	sub.l	d2,a4
 
-	move.w	#15,d7
+	move.w	82(a3),d7	; character height
+	subq	#1,d7
 .loop2
 	move.b  (a4),0(a5)
 	move.b  (a4),2(a5)
 	move.b  (a4),4(a5)
 	move.b  (a4),6(a5)
-	add.l	#256,a4
+	lea		(a4,d0.w),a4
 	add.l	#160,a5
 	dbra	d7,.loop2
-	sub.l	#2553,a5
-	sub.l	#4095,a4
+	;sub.l	#2553,a5	; 160*16-7
+	sub.l	d1,a5
+	addq	#6,a5
+	;sub.l	#4095,a4	; 256*16-1
+	sub.l	d2,a4
 
 	dbra	d6,.loop0
 
-	add.l	#2432,a5
+	;add.l	#2432,a5	; 160*(16-1)-32
+	add.l	d3,a5
 	dbra	d5,.loopa
 
-	move.w	#7,-(sp)	; Crawcin
-	trap	#1
-	addq.l	#2,sp
-
-	clr -(sp)
-	trap #1		;Pterm0
+	bra .mainloop
 
 	; ---- sub routines
 printlhex:
@@ -142,6 +174,8 @@ printbuffer:
 	dc.b	"00000000"
 printbufferend:
 	dc.b	0
+msg1:
+	dc.b	$a,$d,'Press key 0, 1 or 2 to display font',$a,$d,0
 
 	; bss
 	bss
