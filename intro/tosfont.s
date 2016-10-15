@@ -30,21 +30,26 @@
 
 
 	move.l	pFnthdr,a2
-	move.w	#2,d6
 .loopfont:
 	move.l	(a2)+,d0		; font address
 	move.l	d0,d3
 	bsr		printlhex
+	tst.l	d3
+	beq		.exitloopfont
 	cconout #$20
-	;nom de la fonte
-	addq.l	#4,d3
+	addq.l	#4,d3		; font name
 	move.l	d3,-(sp)
 	move	#9,-(sp)	; Cconws
 	trap	#1
 	addq.l	#6,sp
+	cconout #$20
+	move.l	d3,a0
+	move.l	76(a0),d0	; font width and heigth
+	bsr		printlhex
 	cconout #$A
 	cconout #$D
-	dbra	d6,.loopfont
+	bra.s	.loopfont
+.exitloopfont
 
 	; affichage des caracteres
 	move.w    #2,-(sp)     ; Physbase
