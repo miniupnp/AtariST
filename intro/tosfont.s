@@ -30,6 +30,8 @@
 
 
 	move.l	pFnthdr,a2
+	move.w	#2,d6
+.loopfont:
 	move.l	(a2)+,d0		; font address
 	move.l	d0,d3
 	bsr		printlhex
@@ -42,30 +44,7 @@
 	addq.l	#6,sp
 	cconout #$A
 	cconout #$D
-	move.l	(a2)+,d0		; font address
-	move.l	d0,d3
-	bsr		printlhex
-	cconout #$20
-	;nom de la fonte
-	addq.l	#4,d3
-	move.l	d3,-(sp)
-	move	#9,-(sp)	; Cconws
-	trap	#1
-	addq.l	#6,sp
-	cconout #$A
-	cconout #$D
-	move.l	(a2)+,d0		; font address
-	move.l	d0,d3
-	bsr		printlhex
-	cconout #$20
-	;nom de la fonte
-	addq.l	#4,d3
-	move.l	d3,-(sp)
-	move	#9,-(sp)	; Cconws
-	trap	#1
-	addq.l	#6,sp
-	cconout #$A
-	cconout #$D
+	dbra	d6,.loopfont
 
 	; affichage des caracteres
 	move.w    #2,-(sp)     ; Physbase
