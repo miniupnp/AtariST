@@ -104,13 +104,22 @@
 	mulu.w	#160,d3
 	add.w	#32,d3
 
-	; there is some more work to do to support the 6x6 font
+	; d0 = font image width (in bytes)
+	; d1 = screen offset to next line of the character (1 pixel below)
+	; d2 = font offset to next character
+	; d3 = screen offset to next line of characters (8 or 16 pixels below)
+	; d4
+	; d5 = character line counter (8 lines of 32 chars)
+	; d6 = character couple counter (16*2 characters per line)
+	; d7 = character pixels line counter
 
 	move.w	#7,d5	; 8 lines
 .loopa
+	cmp.w	#6,52(a3)	; Largest character width
+	beq		.size6
 	move.w	#15,d6	; of 2*16 characters
 .loop0
-	move.w	82(a3),d7	; character height
+	move.w	82(a3),d7	; character height (height of the font image)
 	subq	#1,d7
 .loop1
 	move.b  (a4),0(a5)
@@ -145,6 +154,113 @@
 
 	;add.l	#2432,a5	; 160*(16-1)-32
 	add.l	d3,a5
+	dbra	d5,.loopa
+
+	bra .mainloop
+
+	; for the 6x6 font, display characters 4 by 4 :
+	; AAAAAABB BBBBCCCC CCDDDDDD
+.size6
+	move.w	d5,-(sp)
+
+	move.w	#7,d6	; of 4*8 characters
+.loop0b
+
+	move.w	82(a3),d7	; character height
+	subq	#1,d7
+.loop1b
+	move.b (a4),d4
+	lsr		#2,d4
+	andi.w	#$003f,d4
+	move.b  d4,0(a5)
+	move.b  d4,2(a5)
+	move.b  d4,4(a5)
+	move.b  d4,6(a5)
+	lea		(a4,d0.w),a4
+	add.l	#160,a5		; next screen line
+	dbra	d7,.loop1b
+	;sub.l	#2559,a5	; 160*16-1
+	sub.l	d1,a5
+	;sub.l	#4095,a4	; 256*16-1
+	sub.l	d2,a4
+	subq	#1,a4
+
+	move.w	82(a3),d7	; character height
+	subq	#1,d7
+.loop2b
+	move.b 1(a4),d4
+	lsr.w	#4,d4
+	andi.w	#$003f,d4
+	move.b (a4),d5
+	andi.w	#$003,d5
+	lsl.w	#4,d5
+	or.w	d5,d4
+	move.b  d4,0(a5)
+	move.b  d4,2(a5)
+	move.b  d4,4(a5)
+	move.b  d4,6(a5)
+	lea		(a4,d0.w),a4
+	add.l	#160,a5
+	dbra	d7,.loop2b
+	;sub.l	#2553,a5	; 160*16-7
+	sub.l	d1,a5
+	addq	#6,a5
+	;sub.l	#4095,a4	; 256*16-1
+	sub.l	d2,a4
+
+	move.w	82(a3),d7	; character height
+	subq	#1,d7
+.loop3b
+	move.b 1(a4),d4
+	lsr.w	#6,d4
+	andi.w	#$003f,d4
+	move.b (a4),d5
+	andi.w	#$000f,d5
+	lsl.w	#2,d5
+	or.w	d5,d4
+	move.b  d4,0(a5)
+	move.b  d4,2(a5)
+	move.b  d4,4(a5)
+	move.b  d4,6(a5)
+	lea		(a4,d0.w),a4
+	add.l	#160,a5
+	dbra	d7,.loop3b
+	;sub.l	#2553,a5	; 160*16-7
+	sub.l	d1,a5
+	;sub.l	#4095,a4	; 256*16-1
+	sub.l	d2,a4
+
+	move.w	82(a3),d7	; character height
+	subq	#1,d7
+.loop4b
+	move.b (a4),d4
+	andi.w	#$003f,d4
+	move.b  d4,0(a5)
+	move.b  d4,2(a5)
+	move.b  d4,4(a5)
+	move.b  d4,6(a5)
+	lea		(a4,d0.w),a4
+	add.l	#160,a5
+	dbra	d7,.loop4b
+	;sub.l	#2553,a5	; 160*16-7
+	sub.l	d1,a5
+	addq	#6,a5
+	;sub.l	#4095,a4	; 256*16-1
+	sub.l	d2,a4
+
+
+	dbra	d6,.loop0b
+
+	;add.l	#2432,a5	; 160*(16-1)-32
+	add.l	d3,a5
+
+	; add a blank line after characters for 6x6 font
+	move.w	#79,d5
+.loopblankline
+	clr.w	(a5)+
+	dbra	d5,.loopblankline
+
+	move.w	(sp)+,d5
 	dbra	d5,.loopa
 
 	bra .mainloop
