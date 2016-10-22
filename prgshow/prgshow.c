@@ -79,7 +79,7 @@ int parse_symbols(const BYTE * symbols, unsigned long symbolsize)
 		if(type & STYP_EQUATED) printf("EQU ");
 		if(type & STYP_DEFINED) printf("DEF ");
 		if((type & STYP_TFILE) == STYP_TFILE) printf("FILE ");
-		/*if((type & STYP_TFARC) == STYP_TFARC) printf("ARCH "); collision with STYP_LONGNAME */
+		if((type & (STYP_TFARC | 0x0f)) == STYP_TFARC) printf("ARCH "); /* beware of collision with STYP_LONGNAME */
 		printf("%.8s", symbols + offset);
 		if((type & STYP_LONGNAME) == STYP_LONGNAME) {
 			offset += 14;
