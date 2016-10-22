@@ -165,7 +165,20 @@ int parse_prg(const uint8_t * buffer, unsigned long size)
 	printf("bss size :  $%08x = %6u bytes\n", bsize, bsize);
 	printf("symb size : $%08x = %6u bytes\n", ssize, ssize);
 	printf("reserved :  $%08x\n", res1);
-	printf("prgflags :  $%08x\n", prgflags);
+	printf("prgflags :  $%08x", prgflags);
+	if(prgflags & 0x00000001) fputs(" fastload", stdout);
+	if(prgflags & 0x00000002) fputs(" alternate RAM", stdout);
+	if(prgflags & 0x00000004) fputs(" Malloc alternate RAM", stdout);
+	switch(prgflags & 0x000000f0) {	/* memory protection mode */
+	case 0x00000000:	fputs(" Private", stdout); break;
+	case 0x00000010:	fputs(" Global", stdout); break;
+	case 0x00000020:	fputs(" Super", stdout); break;
+	case 0x00000030:	fputs(" Read-only", stdout); break;
+	default:	fputs(" Unknown", stdout);
+	}
+	if(prgflags & 0x00001000) fputs(" Shared TEXT", stdout);
+	if(prgflags & 0xf0000000) printf(" TPA size=%ukB", (prgflags >> 28) * 128);
+	putchar('\n');
 	printf("absflags :  $%04x\n", absflags);
 
 	fixupsize = (long)size - (long)(fixups - buffer);
