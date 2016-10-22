@@ -3,6 +3,7 @@
  *
  * References :
  * http://cd.textfiles.com/ataricompendium/BOOK/HTML/CHAP2.HTM#processes
+ * http://toshyp.atari.org/en/005005.html
  */
 #include <stdint.h>
 #include <stdlib.h>
