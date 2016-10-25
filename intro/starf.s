@@ -104,10 +104,19 @@ putpixel:
 	andi.w	#$fff0,d2
 	lsr.w	#1,d2
 	add.w	d2,d1	; d1 = 160 * Y + (X / 16)*8
-	move.w	#$8000,d2
-	lsr.w	d0,d2	; d2 = bit mask
 
-	or.w	d2,6(a0,d1)	; 4th word (bit plan)
+	; shift + OR version
+	;move.w	#$8000,d2
+	;lsr.w	d0,d2	; d2 = bit mask
+	;or.w	d2,6(a0,d1)	; 4th word (bit plan)
+
+	; bset.b version
+	move.w	d0,d2
+	lsr.w	#3,d2
+	add.w	d2,d1	; d1 = 160 * Y + (X / 16)*8 + ((X / 8) % 2)
+	eor.w	#$f,d0
+	bset.b	d0,6(a0,d1)	; ; 4th bit plan
+
 	rts
 
 printlhex:
