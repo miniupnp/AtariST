@@ -93,7 +93,8 @@
 	clr -(sp)
 	trap #1		;Pterm0
 
-	; d0 = X, d1 = Y
+	; d0 = X, d1 = Y, a0 = screen
+	; trashes d2
 putpixel:
 	lsl.w	#5,d1	; d1 = 32 * Y
 	move.w	d1,d2
@@ -155,7 +156,7 @@ setuppalette:
 
 restorepalette:
 	lea	palettebackup,a1
-	lea	$ffff8240,a0
+	lea	$ffff8240.w,a0
 	move.w	#15,d0
 .restorepal:
 	move.w	(a1)+,(a0)+
