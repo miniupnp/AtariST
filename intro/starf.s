@@ -76,6 +76,17 @@
 	cmp.w	#200,d1
 	bne.s	.loop
 
+	move.w	#500,d3
+.loopr
+	;supexec	rand
+	bsr	rand
+	move.l	d0,d1
+	swap	d0
+	andi.w	#127,d1
+	andi.w	#255,d0
+	move.l	physbase,a0
+	bsr.s	putpixel
+	dbra	d3,.loopr
 
 	move.w	#7,-(sp)	; Crawcin
 	trap	#1
@@ -163,6 +174,7 @@ restorepalette:
 	dbra	d0,.restorepal
 	rts
 
+	include 'random.s'
 
 	; ---- data section
 	data
