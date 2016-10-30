@@ -68,6 +68,7 @@ raster_dbg	equ	0
 	lsr.w	#1,d0
 	dbra	d1,.loop0
 
+	if 0
 	move.l	physbase,a0
 	moveq	#0,d0
 	moveq	#0,d1
@@ -81,6 +82,7 @@ raster_dbg	equ	0
 	addq	#1,d1
 	cmp.w	#200,d1
 	bne.s	.loop
+	endif
 
 	; fill stars array
 	lea		stars(pc),a1
