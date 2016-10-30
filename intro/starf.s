@@ -1,7 +1,13 @@
 ; (c) 2016 nanard
 ; https://github.com/miniupnp/AtariST
 ;
+; 68000 instruction timings :
+; http://oldwww.nvg.ntnu.no/amiga/MC680x0_Sections/mc68000timing.HTML
+;
 ; starfield
+
+nb_stars	equ 220
+raster_dbg	equ	0
 
 	; MACRO(S) DEFINITION(S)
 	macro supexec		; 1 argument : subroutine address
@@ -76,33 +82,114 @@
 	cmp.w	#200,d1
 	bne.s	.loop
 
-	move.w	#500,d3
+	; fill stars array
+	lea		stars(pc),a1
+	move.w	#nb_stars-1,d3
 .loopr
 	;supexec	rand
 	bsr	rand
-	move.l	d0,d1
+	move.w	d0,d1
 	swap	d0
-	andi.w	#127,d1
-	andi.w	#255,d0
-	move.l	physbase,a0
-	bsr.s	putpixel
+	;andi.w	#511,d1
+	;andi.w	#1023,d0
+	;subi.w	#256,d1
+	;subi.w	#512,d0
+	move.w	d0,(a1)+	; X
+	move.w	d1,(a1)+	; Y
+	bsr	rand
+	andi.w	#1023,d0
+	add.w	#1,d0
+	move.w	d0,(a1)+	; Z
+	move.w	#0,(a1)+	; old addr
+	;move.l	physbase,a0
+	;bsr.s	putpixel
 	dbra	d3,.loopr
 
+	; ==== MAIN LOOP ====
 mainloop:
+	if	raster_dbg
 	move.w	#0,setpal+2	;black
 	supexec	setpal
+	endif
 
 	move.w    #37,-(sp) ; Vsync (wait VBL)
 	trap      #14       ; XBIOS
 	addq.l    #2,sp
 
-	move.w	#$f00,setpal+2	;red
+	if	raster_dbg
+	move.w	#$a00,setpal+2	;red
 	supexec	setpal
+	endif
 
-	move.w	#4000,d0
-.lp
-	nop
-	dbra	d0,.lp
+	move.l	physbase,a0
+	lea	stars(pc),a1
+	addq	#6,a1
+	move.w	#nb_stars-1,d7
+	moveq.l	#0,d0
+.blankloop
+	move.w	(a1),d1
+	;move.b	d0,6(a0,d1)
+	;move.w	d0,6(a0,d1)
+	move.l	d0,4(a0,d1)
+	addq	#8,a1
+	dbra	d7,.blankloop
+
+	if	raster_dbg
+	move.w	#$00a,setpal+2	;blue
+	supexec	setpal
+	endif
+
+	move.w	#200,d4		; Y max
+	move.w	#160*2-1,d5	; X center
+	move.w	#99*2-1,d6	; Y center
+	if	raster_dbg
+	move.l	physbase,a0
+	lea	stars(pc),a1
+	else
+	sub.l	#nb_stars*8+6,a1
+	endif
+	move.w	#nb_stars-1,d7
+.starloop
+	move.w	(a1)+,d0	; X
+	move.w	(a1)+,d1	; Y
+	move.w	(a1),d3	; Z
+	ext.l	d0
+	ext.l	d1
+
+	divs.w	d3,d0
+	divs.w	d3,d1
+
+	; decrement Z
+	subq.w	#7,d3
+	;cmp.w	#8,d3
+	bge.s	.zok
+	;bne.s	.zok
+	add.w	#1024,d3
+.zok
+	move.w	d3,(a1)+
+
+	add.w	d6,d1	; Y center
+	bmi.s	.skipstar
+	add.w	d5,d0	; X center
+	bmi.s	.skipstar
+	asr.w	#1,d1
+	asr.w	#1,d0
+	cmp.w	d4,d1	; Y max
+	bge.s	.skipstar
+	cmp.w	#320,d0	; X max
+	bge.s	.skipstar
+	bsr		putpixel
+	move.w	d1,(a1)+
+	dbra	d7,.starloop
+	bra.s	.endstarloop
+
+.skipstar
+	addq	#2,a1
+	dbra	d7,.starloop
+.endstarloop
+
+	move.w	#$0a0,setpal+2	;green
+	supexec	setpal
 
 	move.w	#11,-(sp)	; Cconis
 	trap	#1
@@ -129,27 +216,35 @@ mainloop:
 	; d0 = X, d1 = Y, a0 = screen
 	; trashes d2
 putpixel:
-	lsl.w	#5,d1	; d1 = 32 * Y
-	move.w	d1,d2
-	lsl.w	#2,d1	; d1 = 128 * Y
-	add.w	d2,d1	; d1 = 160 * Y
+	lsl.w	#5,d1	; d1 = 32 * Y		6+2*5=16 clock cycles
+	move.w	d1,d2	;                   4 clock cycles
+	;lsl.w	#2,d1	; d1 = 128 * Y      6+2*2=10 clock cycles
+	add.w	d1,d1	; d1 = 64 * Y       4 clock cycles
+	add.w	d1,d1	; d1 = 128 * Y      4 clock cycles
+	add.w	d2,d1	; d1 = 160 * Y      8 clock cycles
+	; 16 + 4 + 10 + 8 = 38 clock cycles
+	; 16 + 4 + 4 + 4 + 8 ) 36 clock cycles
+	;mulu.w	#160,d1	; d1 = 160 * Y      38+2*2+4=42+4=46 clock cycles
 	move.w	d0,d2
 	andi.w	#$f,d0	; d0 = X % 16
-	andi.w	#$fff0,d2
-	lsr.w	#1,d2
+	andi.w	#$fff0,d2	; 8 clock cycles
+	lsr.w	#1,d2		; 8 clock cycles
 	add.w	d2,d1	; d1 = 160 * Y + (X / 16)*8
 
 	; shift + OR version
-	;move.w	#$8000,d2
-	;lsr.w	d0,d2	; d2 = bit mask
-	;or.w	d2,6(a0,d1)	; 4th word (bit plan)
+	move.w	#$8000,d2	;                     8 clock cycles
+	lsr.w	d0,d2	; d2 = bit mask           6+2n : from 6 to 36 clock cycles
+	or.w	d2,6(a0,d1)	; 4th word (bit plan) 8+10=18 cycles
+	or.w	d2,4(a0,d1)	; 4th word (bit plan) 8+10=18 cycles
+	; 8 + [6;36] + 18 = [32;62] mean is 47...
 
 	; bset.b version
-	move.w	d0,d2
-	lsr.w	#3,d2
-	add.w	d2,d1	; d1 = 160 * Y + (X / 16)*8 + ((X / 8) % 2)
-	eor.w	#$f,d0
-	bset.b	d0,6(a0,d1)	; ; 4th bit plan
+	;move.w	d0,d2	;   4 clock cycles
+	;lsr.w	#3,d2	;   6+2*3=12 clock cycles
+	;add.w	d2,d1	; d1 = 160 * Y + (X / 16)*8 + ((X / 8) % 2)  4 clock cycles
+	;eor.w	#$f,d0	;   8 clock cycles
+	;bset.b	d0,6(a0,d1)	; 4th bit plan   8+10=18 cycles
+	; 4 + 12 + 4 + 8 + 18 = 46 clock cycles
 
 	rts
 
@@ -221,3 +316,5 @@ logbase:
 	ds.l	1
 rezbackup:
 	ds.w	1
+stars:
+	ds.w	4*nb_stars	; word (X,Y,Z,old_addr)
