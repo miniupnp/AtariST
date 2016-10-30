@@ -68,7 +68,7 @@
 .loop:
 	move.w	d0,-(sp)
 	move.w	d1,-(sp)
-	bsr.s	putpixel	; d0=X d1=Y
+	bsr		putpixel	; d0=X d1=Y
 	move.w	(sp)+,d1
 	move.w	(sp)+,d0
 	addq	#1,d0
@@ -87,6 +87,28 @@
 	move.l	physbase,a0
 	bsr.s	putpixel
 	dbra	d3,.loopr
+
+mainloop:
+	move.w	#0,setpal+2	;black
+	supexec	setpal
+
+	move.w    #37,-(sp) ; Vsync (wait VBL)
+	trap      #14       ; XBIOS
+	addq.l    #2,sp
+
+	move.w	#$f00,setpal+2	;red
+	supexec	setpal
+
+	move.w	#4000,d0
+.lp
+	nop
+	dbra	d0,.lp
+
+	move.w	#11,-(sp)	; Cconis
+	trap	#1
+	addq.l	#2,sp
+	tst.w	d0	; DEV_READY (-1) if char is available / DEV_BUSY (0) if not
+	beq		mainloop
 
 	move.w	#7,-(sp)	; Crawcin
 	trap	#1
@@ -145,6 +167,10 @@ printlhex:
 	move	#9,-(sp)	; Cconws
 	trap	#1
 	addq.l	#6,sp
+	rts
+
+setpal:
+	move.w	#$0f0f,$ffff8240.w	; set color 0
 	rts
 
 setuppalette:
