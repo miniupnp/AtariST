@@ -63,9 +63,9 @@ raster_dbg	equ	0
 	move	#$8000,d0
 	move	#15,d1
 .loop0
-	lea	160(a0),a0
+	lea	160(a0),a0		; next line
 	move.w	d0,6(a0)
-	lsr.w	#1,d0
+	lsr.w	#1,d0		; pixel to the right
 	dbra	d1,.loop0
 
 	if 0
@@ -103,8 +103,6 @@ raster_dbg	equ	0
 	add.w	#1,d0
 	move.w	d0,(a1)+	; Z
 	move.w	#0,(a1)+	; old addr
-	;move.l	physbase,a0
-	;bsr.s	putpixel
 	dbra	d3,.loopr
 
 	; ==== MAIN LOOP ====
@@ -190,8 +188,10 @@ mainloop:
 	dbra	d7,.starloop
 .endstarloop
 
+	if	raster_dbg
 	move.w	#$0a0,setpal+2	;green
 	supexec	setpal
+	endif
 
 	move.w	#11,-(sp)	; Cconis
 	trap	#1
