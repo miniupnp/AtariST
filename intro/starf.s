@@ -6,8 +6,10 @@
 ;
 ; starfield
 
-nb_stars	equ 220
+;nb_stars	equ 220
+nb_stars	equ 160
 raster_dbg	equ	0
+enable_rotate	equ 1
 
 	; MACRO(S) DEFINITION(S)
 	macro supexec		; 1 argument : subroutine address
@@ -98,6 +100,14 @@ raster_dbg	equ	0
 	;subi.w	#512,d0
 	move.w	d0,(a1)+	; X
 	move.w	d1,(a1)+	; Y
+	muls.w	d0,d0
+	muls.w	d1,d1
+	add.l	d1,d0		; X^2+Y^2
+	cmp.l	#$40000000,d0
+	blt.s	.ok
+	subq	#4,a1
+	bra.s	.loopr
+.ok
 	bsr	rand
 	andi.w	#1023,d0
 	add.w	#1,d0
@@ -150,14 +160,40 @@ mainloop:
 	endif
 	move.w	#nb_stars-1,d7
 .starloop
-	move.w	(a1)+,d0	; X
-	move.w	(a1)+,d1	; Y
+	if enable_rotate
+	; rotation : (x+iy)(cost+isint) = xcost-ysint + i(ycost+xsint)
+	; cost = 32751 / 32768 (15bits)
+	; sint = 1055  / 32768 (15bits)
+	move.w	(a1),d0
+	move.w	d0,d2
+	move.w	2(a1),d1
+	move.w	d1,d3
+	muls.w	#32751,d0	; xcost
+	muls.w	#1055,d3	; ysint
+	muls.w	#1055,d2	; xsint
+	muls.w	#32751,d1	; ycost
+	;sub.l	d3,d0		; xcost-ysint
+	add.l	d3,d0		; xcost+ysint (-t as angle)
+	add.l	d0,d0
+	swap	d0
+	move.w	d0,(a1)+
+	;add.l	d2,d1		; ycost+xsint
+	sub.l	d2,d1		; ycost-xsint (-t as angle)
+	add.l	d1,d1
+	swap	d1
+	move.w	d1,(a1)+
+	else	; enable_rotate
+	;move.w	(a1)+,d0	; X
+	;move.w	(a1)+,d1	; Y
+	movem.w	(a1)+,d0-d1	; X-Y
+	endif
+
 	move.w	(a1),d3	; Z
 	ext.l	d0
 	ext.l	d1
 
-	divs.w	d3,d0
-	divs.w	d3,d1
+	divs.w	d3,d0	; Xproj = X/Z
+	divs.w	d3,d1	; Yproj = Y/Z
 
 	; decrement Z
 	subq.w	#7,d3
