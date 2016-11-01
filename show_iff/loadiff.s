@@ -1,6 +1,22 @@
 ;
 ; http://www.atari-wiki.com/?title=ST_Picture_Formats
+; http://wiki.amigaos.net/wiki/ILBM_IFF_Interleaved_Bitmap
+; http://www.textfiles.com/programming/AMIGA/iff.txt
 
+; BMHD : 20 bytes
+; offset  0   UWORD width     (320)
+; offset  2   UWORD height    (200)
+; offset  4   WORD x position (0)
+; offset  6   WORD y position (0)
+; offset  8   BYTE number of bitplanes (4)
+; offset  9   BYTE masking mode (0=none, 1=mask, 2=transp color, 3=Lasso)
+; offset 10   BYTE compression (0=none, 1=packbits, 2=vertical RLE)
+; offset 11   BYTE reserved
+; offset 12   WORD transparent color (for masking mode 2)
+; offset 14   BYTE x-aspect
+; offset 15   BYTE y-aspect
+; offset 16   UWORD page width  (320)
+; offset 18   UWORD page height (200)
 	code
 
 	; d0 = byte count
