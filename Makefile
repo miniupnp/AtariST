@@ -5,3 +5,4 @@ all:
 	$(MAKE) -C prgshow
 	$(MAKE) -C ym_digit
 	$(MAKE) -C intro
+	$(MAKE) -C show_iff
