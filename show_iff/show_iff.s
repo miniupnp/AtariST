@@ -32,26 +32,10 @@
 	bsr _cconws
 	move.l	(sp)+,a0
 
-	move.w	#0,-(sp)	; read-only
-	move.l	a0,-(sp)	; fname
-	move.w	#61,-(sp)	; Fopen
-	trap	#1			; GEMDOS
-	addq.l	#8,sp
-
-	tst.l	d0
-	bmi.s	.openerror
-
-	pea	filebuffer			; buf
-	move.l	#32000,-(sp)	; count
-	move.w	d0,-(sp)		; handle
-	move.w	#63,-(sp)		; Fread
-	trap	#1				; GEMDOS
+	bsr	loadfile
 	move.w	d0,d7
-	move.w	#62,(sp)		; Fclose
-	trap	#1				; GEMDOS
-	lea		12(sp),sp
+	bmi.s	.fileerror
 
-	move.w	d7,d0
 	bsr	printwdec
 
 	move.w	#7,-(sp)	; Crawcin
@@ -78,13 +62,13 @@
 
 	bra	end
 
-.openerror:
-	lea	.openerrormsg(pc),a0
+.fileerror:
+	lea	.fileerrormsg(pc),a0
 	bsr	_cconws
 
 	data
-.openerrormsg
-	dc.b	"Fopen error",$d,$a,0
+.fileerrormsg
+	dc.b	"loadfile error",$d,$a,0
 
 	code
 
@@ -111,6 +95,7 @@ _cconws:
 	rts
 
 	include '../asmlib/printdec.s'
+	include '../asmlib/loadfile.s'
 	include 'loadiff.s'
 
 	data
