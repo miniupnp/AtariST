@@ -76,7 +76,16 @@ loadiff
 .notcmap
 
 	cmp.l	#'BODY',d1
-	bne.s	.notbody
+	bne		.notbody
+	cmp.b	#1,10(a4)	; compression mode
+	beq.s	.packbits
+	; vertical RLE packing. BODY Contains VDAT chunks (1 per bitplane)
+	movem.l	d0-d2/a0,-(sp)
+	move.l	d2,d0
+	bsr		.readchunk
+	movem.l	(sp)+,d0-d2/a0
+	bra		.endswitch
+.packbits
 	movem.l	d2/a0,-(sp)
 	; unpack packbits
 	lea	.scanline(pc),a3
@@ -101,7 +110,7 @@ loadiff
 	cmp.w	#1,d2
 	bgt	.contbody
 	movem.l	(sp)+,d2/a0
-	bra.s	.endswitch
+	bra		.endswitch
 .contbody
 	move.b	(a0)+,d3	; read byte n
 	subq.w	#1,d2
@@ -130,6 +139,73 @@ loadiff
 	addq.w	#1,d5
 	bra.s	.bodyloop
 .notbody
+
+	cmp.l	#'VDAT',d1
+	bne.s	.notvdat
+	movem.l	a0-a1,-(sp)
+	move.w	2(a4),d1	; image height
+	move.w	(a0)+,d3	; cmd count (+2)
+	lea	-2(a0,d3.w),a2	; data address
+	lea	-2(a0,d2.w),a5	; end address
+	subq.w	#3,d3
+.vdatloop
+	cmp.l	a2,a5
+	beq.s	.breakvdatloop
+	move.b	(a0)+,d4	; read command
+	ext.w	d4
+	bmi.s	.vdatcpy
+	bne.s	.vdatnonzero
+	move.w	(a2)+,d4	; cmd=0 : load count from data
+	bra.s	.vdatcpy2
+.vdatnonzero
+;	cmp.w	#1,d4
+;	bne.s	.vdatnotone
+;	addq.l	#1,a1	; crash
+;	move.w	d4,(a1)
+;	nop
+;.vdatnotone
+	move.w	(a2)+,d5	; cmd >1 : count = cmd, RLE
+	subq.w	#1,d4
+.vdatrleloop
+	move.w	d5,(a1)
+	bsr.s	.adjustdest
+	dbra	d4,.vdatrleloop
+	dbra	d3,.vdatloop
+	movem.l	(sp)+,a0-a1
+	addq.l	#2,a1
+	bra		.endswitch
+.vdatcpy
+	neg.w	d4	; cmd < 0 : count = -cmd, COPY
+.vdatcpy2
+	subq.w	#1,d4
+.vdatcpyloop
+	move.w	(a2)+,(a1)
+	bsr.s	.adjustdest
+	dbra	d4,.vdatcpyloop
+	dbra	d3,.vdatloop
+.breakvdatloop
+	movem.l	(sp)+,a0-a1
+	addq.l	#2,a1
+	bra		.endswitch
+.adjustdest
+	add.l	#160,a1
+	subq.w	#1,d1
+	bne.s	.noadjust0
+	move.w	2(a4),d1	; image height
+	mulu.w	#160,d1
+	sub.l	d1,a1
+	move.w	2(a4),d1	; image height
+	addq.l	#8,a1
+.noadjust0
+	rts
+.notvdat
+
+	cmp.l	#'BMHD',d1
+	bne.s	.notbmhd
+	move.l	a0,a4
+	bra.s	.endswitch
+.notbmhd
+
 	cmp.l	#'FORM',d1
 	bne.s	.notform
 	movem.l	d0-d2/a0,-(sp)
