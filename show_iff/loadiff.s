@@ -164,6 +164,7 @@ loadiff
 
 	cmp.l	#'VDAT',d1
 	bne		.notvdat
+	; TODO : skip last VDAT for mask
 	sub.w	d2,d0
 	move.l	a1,-(sp)
 	move.w	2(a4),d1	; image height
