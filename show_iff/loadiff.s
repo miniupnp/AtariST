@@ -89,30 +89,45 @@ loadiff
 	movem.l	d2/a0,-(sp)
 	; unpack packbits
 	lea	.scanline(pc),a3
-	moveq.l	#0,d5
+	move.b	8(a4),d5	; number of bitplanes
+	ext.w	d5
+	mulu.w	#40,d5
 .bodyloop
-	move.b	8(a4),d6	; number of bitplanes
-	ext.w	d6
-	mulu.w	#40,d6
-	cmp.w	d6,d5
+	tst.w	d5
 	bne.s	.noscanlinecopy
+	; copy the scan line from amiga format to Atari ST (low-res)
 	lea	.scanline(pc),a3
-	move.b	8(a4),d6	; number of bitplanes
-	ext.w	d6
-	subq.w	#1,d6
 	move.l	a1,-(sp)
+	moveq	#0,d6
 .lp2
-	move.w	#19,d3
+	move.w	#19,d3		; 20 words per scanline/bitplan
 .lp1
 	move.w	(a3)+,(a1)
 	addq.l	#8,a1
 	dbra	d3,.lp1
 	sub.l	#160-2,a1
-	dbra	d6,.lp2
+	addq.w	#1,d6
+	cmp.b	8(a4),d6	; number of bitplanes
+	bne.s	.lp2
+.lp3
+	cmp.w	#4,d6
+	beq.s	.endcopyscanline
+	; erase unused bitplanes
+	move.w	#19,d3		; 20 words per scanline/bitplane
+.lp4
+	move.w	#0,(a1)
+	addq.l	#8,a1
+	dbra	d3,.lp4
+	sub.l	#160-2,a1
+	addq.w	#1,d6
+	bra	.lp3
+.endcopyscanline
 	move.l	(sp)+,a1
 	add.l	#160,a1
 	lea	.scanline(pc),a3
-	moveq.l	#0,d5
+	move.b	8(a4),d5	; number of bitplanes
+	ext.w	d5
+	mulu.w	#40,d5
 .noscanlinecopy
 	cmp.w	#1,d2
 	bgt	.contbody
@@ -125,12 +140,12 @@ loadiff
 	bmi.s	.negative
 	; n >= 0 : copy n+1 bytes
 	sub.w	d3,d2
-	add.w	d3,d5
+	sub.w	d3,d5
 .copyloop
 	move.b	(a0)+,(a3)+
 	dbra	d3,.copyloop
 	subq.w	#1,d2
-	addq.w	#1,d5
+	subq.w	#1,d5
 	bra.s	.bodyloop
 .negative
 	cmp.w	#-128,d3	; nop
@@ -139,12 +154,12 @@ loadiff
 	move.b	(a0)+,d4
 	subq.w	#1,d2
 	neg.w	d3
-	add.w	d3,d5
+	sub.w	d3,d5
 .rleloop
 	move.b	d4,(a3)+
 	dbra	d3,.rleloop
-	addq.w	#1,d5
-	bra.s	.bodyloop
+	subq.w	#1,d5
+	bra	.bodyloop
 .notbody
 
 	cmp.l	#'VDAT',d1
