@@ -91,10 +91,16 @@ loadiff
 	lea	.scanline(pc),a3
 	moveq.l	#0,d5
 .bodyloop
-	cmp.w	#160,d5
+	move.b	8(a4),d6	; number of bitplanes
+	ext.w	d6
+	mulu.w	#40,d6
+	cmp.w	d6,d5
 	bne.s	.noscanlinecopy
 	lea	.scanline(pc),a3
-	move.w	#3,d6
+	move.b	8(a4),d6	; number of bitplanes
+	ext.w	d6
+	subq.w	#1,d6
+	move.l	a1,-(sp)
 .lp2
 	move.w	#19,d3
 .lp1
@@ -103,7 +109,8 @@ loadiff
 	dbra	d3,.lp1
 	sub.l	#160-2,a1
 	dbra	d6,.lp2
-	add.l	#160-8,a1
+	move.l	(sp)+,a1
+	add.l	#160,a1
 	lea	.scanline(pc),a3
 	moveq.l	#0,d5
 .noscanlinecopy
