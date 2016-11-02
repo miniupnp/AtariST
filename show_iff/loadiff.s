@@ -149,20 +149,21 @@ loadiff
 
 	cmp.l	#'VDAT',d1
 	bne.s	.notvdat
-	movem.l	a0-a1,-(sp)
+	sub.w	d2,d0
+	move.l	a1,-(sp)
 	move.w	2(a4),d1	; image height
 	move.w	(a0)+,d3	; cmd count (+2)
 	lea	-2(a0,d3.w),a2	; data address
-	lea	-2(a0,d2.w),a5	; end address
+	sub.w	d3,d2
 	subq.w	#3,d3
 .vdatloop
-	cmp.l	a2,a5
-	beq.s	.breakvdatloop
 	move.b	(a0)+,d4	; read command
 	ext.w	d4
 	bmi.s	.vdatcpy
 	bne.s	.vdatnonzero
-	move.w	(a2)+,d4	; cmd=0 : load count from data
+	move.w	(a2)+,d4	; cmd=0 : load count from data, COPY
+	subq.w	#2,d2
+	beq.s	.breakvdatloop
 	bra.s	.vdatcpy2
 .vdatnonzero
 ;	cmp.w	#1,d4
@@ -172,15 +173,20 @@ loadiff
 ;	nop
 ;.vdatnotone
 	move.w	(a2)+,d5	; cmd >1 : count = cmd, RLE
+	subq.w	#2,d2
 	subq.w	#1,d4
 .vdatrleloop
 	move.w	d5,(a1)
 	bsr.s	.adjustdest
 	dbra	d4,.vdatrleloop
+	tst.w	d2
+	beq.s	.breakvdatloop
 	dbra	d3,.vdatloop
-	movem.l	(sp)+,a0-a1
+.breakvdatloop
+	move.l	(sp)+,a1
+	move.l	a2,a0
 	addq.l	#2,a1
-	bra		.endswitch
+	bra		.readchunk
 .vdatcpy
 	neg.w	d4	; cmd < 0 : count = -cmd, COPY
 .vdatcpy2
@@ -188,12 +194,11 @@ loadiff
 .vdatcpyloop
 	move.w	(a2)+,(a1)
 	bsr.s	.adjustdest
+	subq.w	#2,d2
+	beq.s	.breakvdatloop
 	dbra	d4,.vdatcpyloop
 	dbra	d3,.vdatloop
-.breakvdatloop
-	movem.l	(sp)+,a0-a1
-	addq.l	#2,a1
-	bra		.endswitch
+	bra.s	.breakvdatloop
 .adjustdest
 	add.l	#160,a1
 	subq.w	#1,d1
