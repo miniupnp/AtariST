@@ -104,10 +104,6 @@ crlf
 
 	bss
 	align	2
-filebuffer
-	ds.b	32000
-
-	align	2
 palette
 	ds.w	16
 rezbackup
@@ -116,3 +112,6 @@ logbase
 	ds.l	1
 physbase
 	ds.l	1
+
+filebuffer
+	ds.b	32000

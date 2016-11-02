@@ -23,7 +23,7 @@
 	; a0 = input data
 	; a1 = picture output
 	; a2 = palette output
-	; trashes d1-d6
+	; trashes d1-d6 / a3-a4
 loadiff
 .readchunk
 	sub.w	#8,d0
@@ -32,6 +32,7 @@ loadiff
 	rts
 .ok
 	movem.l	(a0)+,d1-d2	; chunk name + chunk length
+
 	cmp.l	#'ILBM',d1
 	bne.s	.notilbm
 	; ILBM : next chunk following
@@ -39,6 +40,7 @@ loadiff
 	addq.w	#4,d0
 	bra		.readchunk
 .notilbm
+
 	cmp.l	#'CMAP',d1
 	bne.s	.notcmap
 	; palette
@@ -72,6 +74,7 @@ loadiff
 	bgt.s	.paloop
 	bra.s	.readchunk
 .notcmap
+
 	cmp.l	#'BODY',d1
 	bne.s	.notbody
 	movem.l	d2/a0,-(sp)
@@ -133,6 +136,7 @@ loadiff
 	bsr		.readchunk
 	movem.l	(sp)+,d0-d2/a0
 .notform
+
 .endswitch
 	; default => ignore
 	add.l	d2,a0
