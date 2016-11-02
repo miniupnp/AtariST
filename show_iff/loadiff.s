@@ -163,7 +163,7 @@ loadiff
 .notbody
 
 	cmp.l	#'VDAT',d1
-	bne.s	.notvdat
+	bne		.notvdat
 	sub.w	d2,d0
 	move.l	a1,-(sp)
 	move.w	2(a4),d1	; image height
@@ -179,6 +179,8 @@ loadiff
 	move.w	(a2)+,d4	; cmd=0 : load count from data, COPY
 	subq.w	#2,d2
 	beq.s	.breakvdatloop
+	tst.w	d4
+	beq.s	.vdatloop
 	bra.s	.vdatcpy2
 .vdatnonzero
 	cmp.w	#1,d4
@@ -186,6 +188,8 @@ loadiff
 	move.w	(a2)+,d4	; cmd=1 : load count from data, RLE
 	subq.w	#2,d2
 	beq.s	.breakvdatloop
+	tst.w	d4
+	beq.s	.vdatloop
 .vdatnotone
 	move.w	(a2)+,d5	; cmd >1 : count = cmd, RLE
 	subq.w	#2,d2
