@@ -79,6 +79,17 @@ end:
 	trap	#1
 	addq.l	#2,sp
 
+	lea	palette(pc),a0
+	move.l	a0,-(sp)
+	move.w	#$fff,(a0)+	; white
+	move.w	#$f00,(a0)+ ; red
+	move.w	#$0f0,(a0)+	; green
+	move.w	#$000,(a0)+	; black
+
+	move.w	#6,-(sp)	; Setpalette
+	trap	#14			; XBIOS
+	addq.l	#6,sp
+
 	move.w    rezbackup,-(sp)    ; resolution (0=ST low, 1=ST Mid)
 	move.l    physbase,-(sp)
 	move.l    logbase,-(sp)
