@@ -50,8 +50,8 @@ restorepalette:
 
 install:
 	move.l	#hbl,$120
-	or.b 	#1,$fffffa07.w 	;enable Timer B
-	or.b 	#1,$fffffa13.w
+	or.b 	#1,$fffffa07.w 	; enable Timer B
+	or.b 	#1,$fffffa13.w	; Interrupt mask
 	move.l	$70,oldvbl+2
 	move.l	#vbl,$70
 	move.b 	#0,$fffffa1b.w 	;Timer B stop
@@ -70,11 +70,11 @@ vbl:
 	sub.b	count,d0
 	move.b	d0,count2
 	move.l	(sp)+,d0
-	move.b 	#0,$fffffa1b.w 	;Timer stop
+	move.b 	#0,$fffffa1b.w 	;Timer B stop
 	cmpi.b	#100,count
 	bge.s	.allscreen
-	move.b 	count,$fffffa21.w 	;Counter value
-	move.b 	#8,$fffffa1b.w 	;Timer start
+	move.b 	count,$fffffa21.w 	;Timer B data : Counter value
+	move.b 	#8,$fffffa1b.w 	;Timer B start : Event count mode
 	addq.b	#1,count
 .allscreen:
 ;	move.w	#$0FFF,$FFFF8240	;	white
@@ -92,10 +92,10 @@ hbl:
 	dbra	d0,.cpyloop
 	movem.l	(sp)+,d0/a0-a1
 	move.l	#hbl2,$120
-	move.b 	#0,$fffffa1b.w 	;Timer stop
-	move.b 	count2,$fffffa21.w 	;Counter value
-	move.b 	#8,$fffffa1b.w 	;Timer start
-	bclr 	#0,$fffffa0f.w 	; acknowledge interrupt
+	move.b 	#0,$fffffa1b.w 	;Timer B stop
+	move.b 	count2,$fffffa21.w 	;Timer B data : Counter value
+	move.b 	#8,$fffffa1b.w 	;Timer B start : Event count mode
+	bclr 	#0,$fffffa0f.w 	; acknowledge interrupt Timer B
 	rte
 
 hbl2:
@@ -110,7 +110,7 @@ hbl2:
 	move.l	d0,$FFFF8258.w	;   "  12 & 13
 	move.l	d0,$FFFF825c.w	;   "  14 & 15
 	move.l	(sp)+,d0
-	bclr 	#0,$fffffa0f.w 	; acknowledge interrupt
+	bclr 	#0,$fffffa0f.w 	; acknowledge interrupt Timer B
 	rte
 
 	; ---- data section
