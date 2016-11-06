@@ -1,4 +1,9 @@
+; (c) 2016 Thomas Bernard
+; https://github.com/miniupnp/AtariST
 ;
+; Deluxe Paint IFF image format decoder for Atari ST
+;
+; see docs about IFF format :
 ; http://www.atari-wiki.com/?title=ST_Picture_Formats
 ; http://wiki.amigaos.net/wiki/ILBM_IFF_Interleaved_Bitmap
 ; http://www.textfiles.com/programming/AMIGA/iff.txt
@@ -79,7 +84,8 @@ loadiff
 	bne		.notbody
 	cmp.b	#1,10(a4)	; compression mode
 	beq.s	.packbits
-	; vertical RLE packing. BODY Contains VDAT chunks (1 per bitplane)
+	; TODO : handle other compression modes
+	; 2 = vertical RLE packing. BODY Contains VDAT chunks (1 per bitplane)
 	movem.l	d0-d2/a0,-(sp)
 	move.l	d2,d0
 	bsr		.readchunk
@@ -88,10 +94,11 @@ loadiff
 .packbits
 	movem.l	d2/a0,-(sp)
 	; unpack packbits
-	lea	.scanline(pc),a3
+	lea	.scanline,a3
 	move.b	8(a4),d5	; number of bitplanes
 	ext.w	d5
-	mulu.w	#40,d5
+	mulu.w	(a4),d5		; image width
+	lsr.w	#3,d5		; (nb of bitplanes * width) / 8 = nb of bytes per line
 .bodyloop
 	tst.w	d5
 	bne.s	.noscanlinecopy
@@ -100,7 +107,9 @@ loadiff
 	move.l	a1,-(sp)
 	moveq	#0,d6
 .lp2
-	move.w	#19,d3		; 20 words per scanline/bitplan
+	move.w	(a4),d3		; image width
+	subq.w	#1,d3		; -1
+	asr.w	#4,d3		; (width-1)/16 = (width+15)/16-1
 .lp1
 	move.w	(a3)+,(a1)
 	addq.l	#8,a1
@@ -124,10 +133,11 @@ loadiff
 .endcopyscanline
 	move.l	(sp)+,a1
 	add.l	#160,a1
-	lea	.scanline(pc),a3
+	lea	.scanline,a3
 	move.b	8(a4),d5	; number of bitplanes
 	ext.w	d5
-	mulu.w	#40,d5
+	mulu.w	(a4),d5		; image width
+	lsr.w	#3,d5		; (nb of bitplanes * width) / 8 = nb of bytes per line
 .noscanlinecopy
 	cmp.w	#1,d2
 	bgt	.contbody
@@ -146,10 +156,10 @@ loadiff
 	dbra	d3,.copyloop
 	subq.w	#1,d2
 	subq.w	#1,d5
-	bra.s	.bodyloop
+	bra		.bodyloop
 .negative
 	cmp.w	#-128,d3	; nop
-	beq.s	.bodyloop
+	beq		.bodyloop
 	; -127 <= n <= -1 : repeat next byte (-n + 1) times
 	move.b	(a0)+,d4
 	subq.w	#1,d2
@@ -163,7 +173,7 @@ loadiff
 .notbody
 
 	cmp.l	#'VDAT',d1
-	bne		.notvdat
+	bne.s		.notvdat
 	; TODO : skip last VDAT for mask
 	sub.w	d2,d0
 	move.l	a1,-(sp)
@@ -219,17 +229,6 @@ loadiff
 	dbra	d4,.vdatcpyloop
 	dbra	d3,.vdatloop
 	bra.s	.breakvdatloop
-.adjustdest
-	add.l	#160,a1
-	subq.w	#1,d1
-	bne.s	.noadjust0
-	move.w	2(a4),d1	; image height
-	mulu.w	#160,d1
-	sub.l	d1,a1
-	move.w	2(a4),d1	; image height
-	addq.l	#8,a1
-.noadjust0
-	rts
 .notvdat
 
 	cmp.l	#'BMHD',d1
@@ -250,6 +249,19 @@ loadiff
 	add.l	d2,a0
 	sub.w	d2,d0
 	bra		.readchunk
+
+	; subroutine
+.adjustdest
+	add.l	#160,a1		; to next line
+	subq.w	#1,d1
+	bne.s	.noadjust0
+	move.w	2(a4),d1	; image height
+	mulu.w	#160,d1		; Atari ST screen buffer = 160bytes / line
+	sub.l	d1,a1		; to top
+	move.w	2(a4),d1	; image height
+	addq.l	#8,a1		; next word in the same bitplane
+.noadjust0
+	rts
 
 	bss
 	align 2
