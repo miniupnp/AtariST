@@ -4,6 +4,8 @@
 ; http://www.atari-wiki.com/?title=ST_Picture_Formats
 ;
 
+loadiff_store_current_line	equ 0
+
 	; CODE ENTRY POINT
 	code
 

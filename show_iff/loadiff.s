@@ -24,12 +24,19 @@
 ; offset 18   UWORD page height (200)
 	code
 
+	; please define loadiff_store_current_line
+	; loadiff_store_current_line equ 1
+	; will define WORD loadiff_current_line
+
 	; d0 = byte count
 	; a0 = input data
 	; a1 = picture output
 	; a2 = palette output
 	; trashes d1-d6 / a3-a4
 loadiff
+	if loadiff_store_current_line
+	move.w	#0,loadiff_current_line
+	endif
 .readchunk
 	sub.w	#8,d0
 	bge	.ok
@@ -103,7 +110,10 @@ loadiff
 	tst.w	d5
 	bne.s	.noscanlinecopy
 	; copy the scan line from amiga format to Atari ST (low-res)
-	lea	.scanline(pc),a3
+	if loadiff_store_current_line
+	add.w	#1,loadiff_current_line
+	endif
+	lea	.scanline,a3
 	move.l	a1,-(sp)
 	moveq	#0,d6
 .lp2
@@ -268,3 +278,7 @@ loadiff
 .scanline
 	ds.w	80
 .scanlineend
+	if	loadiff_store_current_line
+loadiff_current_line
+	ds.w	1
+	endif
