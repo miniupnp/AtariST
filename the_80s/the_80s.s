@@ -5,7 +5,7 @@
 
 enable_music	equ 1
 loadiff_store_current_line	equ 1
-
+debug	equ 0
 
 
 	; MACRO(S) DEFINITION(S)
@@ -15,6 +15,10 @@ loadiff_store_current_line	equ 1
 	trap	#14			; XBIOS
 	addq.l	#6,sp
 	endm
+
+	if debug
+	include '../asmlib/hatari.s'
+	endif
 
 	; CODE ENTRY POINT
 	code
@@ -244,10 +248,6 @@ loadiff_store_current_line	equ 1
 	trap      #1           ; GEMDOS
 	addq.l    #2,sp
 	add.l	#30,d0	; offset of file name in DTA
-	;move.l	d0,-(sp)
-	;move.w	#9,-(sp)		; Cconws
-	;trap	#1		; GEMDOS
-	;addq.l	#6,sp
 	move.l	d0,a0
 	bsr loadfile
 	tst.l	d0
@@ -287,7 +287,7 @@ loadiff_store_current_line	equ 1
 
 end:
 	move.w	#7,-(sp)	; Crawcin
-	trap	#1
+	trap	#1			; GEMDOS
 	addq.l	#2,sp
 
 	if	enable_music
@@ -417,7 +417,6 @@ printslow
 	trap	#1		; GEMDOS
 	cmp.b	#10,3(sp)	; LF ?
 	beq.s	.lf
-	bne.s	.notlf
 	move.b	(a6)+,3(sp)
 	beq.s	.breakloop
 	trap	#1		; GEMDOS
@@ -502,7 +501,9 @@ vbl
 	dbra	d0,.loop
 
 	; scrolltext
+	if debug
 	move.w	#$b00,$ffff8240.w	; red
+	endif
 	move.w	tmppos,d0
 	move.w	tmppos+2,d1
 	sub.w	#48,d1
@@ -534,7 +535,9 @@ vbl
 	move.w	d0,tmppos
 .okc
 
+	if debug
 	move.w	#$000,$ffff8240.w	; black
+	endif
 	movem.l	(sp)+,d0-d1/a0-a1
 oldvbl
 	jmp $0.l
@@ -544,9 +547,9 @@ tmppos
 
 hbl
 	move.l	#hbl199,$120
-	move.b 	#0,$fffffa1b.w 	;Timer stop
-	move.b	hblcount2,$fffffa21.w 	;Counter value
-	move.b 	#8,$fffffa1b.w 	;Timer start
+	move.b 	#0,$fffffa1b.w 	;Timer B stop
+	move.b	hblcount2,$fffffa21.w 	; timer B data : Counter value
+	move.b 	#8,$fffffa1b.w 	;Timer B start : Event count mode
 	; set paletteb
 	movem.l	d0/a0-a1,-(sp)
 	lea		paletteb,a0
@@ -561,34 +564,35 @@ hbl
 
 hbl199
 	movem.l	d0/a0-a1,-(sp)
+	if debug
 	move.w	#$00f,$ffff8240.w	; blue
+	endif
 	lea	$ffff8209.w,a0
 	move.b	(a0),d0
 	add.b	#160,d0
 .waitlineend
 	cmp.b	(a0),d0
 	bne.s	.waitlineend
-;	rept 50
-;	or.l	d0,d0
-;	endr
+
 	eor.b	#2,$ffff820a.w		; 50Hz/60Hz switch
+	if debug
 	move.w	#$0f0,$ffff8240.w	; green
-.waitsync
-	;move.b	$ffff8209.w,d0   ; Low-Byte
-	;beq.s	.waitsync         ; mustn't be 0
-	;not.b	d0               ; negate D0
-    ;lsl.b	d0,d0            ; Synchronisation
-	rept 10
+	or.l	d0,d0
+	or.l	d0,d0
+	else
+	rept 6
 	or.l	d0,d0
 	endr
-	;move.w	#$b00,$ffff8240.w	; red
+	endif
 	eor.b	#2,$ffff820a.w		; 50Hz/60Hz switch
+	;set palettec
 	lea		palettec,a0
 	lea		$ffff8240.w,a1
 	move.w	#15,d0
 .loop
 	move.w	(a0)+,(a1)+
 	dbra	d0,.loop
+
 	bclr 	#0,$fffffa0f.w 	; acknowledge interrupt
 	movem.l	(sp)+,d0/a0-a1
 	rte
@@ -609,6 +613,7 @@ fileiddiz
 	; see http://toshyp.atari.org/en/VT_52_terminal.html
 msg1
 	dc.b	27,'E',27,'e'	; clear screen, show cursor
+msgloading
 	dc.b 	"Loading ",0
 msgfont
 	dc.b	"Loading font ",0
