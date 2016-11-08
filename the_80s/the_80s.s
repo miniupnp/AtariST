@@ -277,12 +277,13 @@ debug	equ 0
 	tst.l	d0
 	bmi.s	end
 
+	move.w	d0,-(sp)
 	move.w	#7,-(sp)	; Crawcin
 	trap	#1			; GEMDOS
 	addq.l	#2,sp
+	move.w	(sp)+,d0
 
 	lea	filebuffer,a0
-	;move.l	physbase,a1
 	move.l	framep,a1
 	lea	palettea,a2
 	bsr	loadiff
