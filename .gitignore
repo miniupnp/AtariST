@@ -5,3 +5,5 @@ ym_digit/generate_levels
 prgshow/prgshow
 m68k-atari-mint-build/build
 m68k-atari-mint-build/archives
+*.st
+*.msa
