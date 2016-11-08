@@ -589,12 +589,15 @@ hbl199
 	if debug
 	move.w	#$00f,$ffff8240.w	; blue
 	endif
-	lea	$ffff8209.w,a0
-	move.b	(a0),d0
-	add.b	#160,d0
-.waitlineend
-	cmp.b	(a0),d0
-	bne.s	.waitlineend
+
+	lea		$fffffa1b.w,a0
+	move.b 	#0,(a0)			; fffa1b Timer B stop
+	move.b	#200,6(a0)	 	; fffa21 Timer B data : Counter value
+	move.b	#8,(a0)			; fffa1b Timer B start : Event count mode
+	move.b	6(a0),d0
+.wait
+	cmp.b	6(a0),d0
+	beq.s	.wait
 
 	eor.b	#2,$ffff820a.w		; 50Hz/60Hz switch
 	if debug
