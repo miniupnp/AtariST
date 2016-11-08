@@ -1,7 +1,8 @@
 ; Atari ST Slide Show "The Eighties"
 ;
 ; code:  nanard    https://github.com/miniupnp/AtariST/the_80s
-; music: Estryak
+; music: Estrayk
+; gfx:   jojo073
 
 enable_music	equ 1
 loadiff_store_current_line	equ 1
@@ -662,12 +663,31 @@ fontfile
 	dc.b	'KNIGHT6.IFF',0
 
 scrolltext
-	dc.b	'HELLO TO THIS OLD SCHOOL SLIDE SHOW...'
-	dc.b	' CREDITS:  '
-	dc.b	'CODE: NANARD '
-	dc.b	'MUSIC: ESTRYAK '
-	dc.b	'        ... '
-	dc.b	'STAY ATARI!!!  LOOPING  '
+	dc.b	' WELCOME TO OUR FIRST RELEASE CALLED'
+	dc.b	'      THE 80S       '
+	dc.b	'THE CREDITS FOR THIS AWESOME SLIDESHOW ARE'
+	dc.b	'     CODING BY NANARD      GFX BY JOJO073'
+	dc.b	'     MUSIC COMPOSED IN 1988 BY KARSTEN OBARSKI'
+	dc.b	' AND CONVERTED TO YM2149F BY ESTRAYK       '
+	dc.b	'THE FAMOUS FONT  BY MING OF THE STAR FRONTIERS'
+	dc.b	'            ALL PICTURES HAVE BEEN PIXELED BY '
+	dc.b	'JOJO073 IN DELUXEPAINT 16 COL'
+	dc.b	'     HOPE YOU LIKE THEM!      '
+	dc.b	'RESPECTS TO :   OXYGENE   NO EXTRA   PARADOX   '
+	dc.b	'CHECKPOINT   RNO   DHS   LAMERS   THE PIXEL TWINS   '
+	dc.b	'DUNE   AMIGAWAVE   GENESIS PROJECT   SECTOR ONE   '
+	dc.b	'OXYRON   BATMAN GROUP   CAPSULE   CREAM   '
+	dc.b	'AND ALL WE FORGOT  !!!             '
+	dc.b	'SOME WORDS FROM NANARD WHILE YOU ARE ENJOYING '
+	dc.b	'TRUE 16 COLORS PIXELART :   '
+	dc.b	"I'M VERY HAPPY TO RELEASE MY FIRST PRODUCTION FOR "
+	dc.b	'THE ATARI ST.  LEARNING 68K ASM IS EASY THANKS TO '
+	dc.b	'ALL THOSES WHO HAVE DISCOVERED THE MARVELOUS '
+	dc.b	'POSSIBILITIES OF THIS MACHINE AND ARE STILL PUSHING '
+	dc.b	"THE FRONTIERS TOWARD THE HORIZON.  "
+	dc.b	"I'D LIKE TO THANKS ESPECIALLY HATARI AUTHORS, "
+	dc.b	'ZERKMAN AND ATARIJOOKIE   '
+	dc.b	'STAY ATARI!!!                         '
 scrolltextend
 
 scrolltextlen	equ	scrolltextend-scrolltext
