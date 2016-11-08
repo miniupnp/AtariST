@@ -57,6 +57,9 @@ debug	equ 0
 	clr.b	d0
 	move.l	d0,framep
 
+	dc.w $a000 ; Line-A init
+	dc.w $a00a ; Line-A hide mouse
+
 	move.w	#4,-(sp)	; Getrez
 	trap	#14			; XBIOS
 	move.w	d0,rezbackup
