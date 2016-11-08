@@ -44,14 +44,6 @@ debug	equ 0
 
 
 	supexec backuppalette
-	lea		palettebackup,a0
-	lea		palettea,a1
-	lea		paletteb,a2
-	move.w	#15,d0
-.cpypala
-	move.w	(a0),(a1)+
-	move.w	(a0)+,(a2)+
-	dbra	d0,.cpypala
 
 	move.l	#framebuffer+255,d0
 	clr.b	d0
@@ -136,7 +128,7 @@ debug	equ 0
 	move.w	#9,-(sp)	; Cconws
 	trap	#1		; GEMDOS
 	addq.l	#6,sp
-	add.l	#13,a6	; 8+3+dot+null term = 13 chars
+	lea		13(a6),a6	; 8+3+dot+null term = 13 chars
 	tst.b	(a6)
 	bne	.filecheckloop
 
@@ -222,22 +214,38 @@ debug	equ 0
 	addq.l	#6,sp
 
 	; load first IFF
+	lea	files,a6
 	pea	msgloading
 	move.w	#9,-(sp)	; Cconws
 	trap	#1		; GEMDOS
-	move.l	#files,2(sp)
+	move.l	a6,2(sp)
 	trap	#1		; GEMDOS
 	addq.l	#2,sp
 	move.l	(sp)+,a0
 	bsr loadfile
-	;tst.w	d0
-	;bmi	.firstloadfailed
+	tst.w	d0
+	bpl.s	.firstfileok
 
+	pea		msgnotfound
+	move.w	#9,-(sp)	; Cconws
+	trap	#1			; GEMDOS
+	move.w	#7,(sp)		; Crawcin
+	trap	#1			; GEMDOS
+	addq.l	#6,sp
+	bra	errorend
+
+.firstfileok
 	; decode IFF
 	lea	filebuffer,a0
 	move.l	framep,a1
 	lea	palettea,a2
 	bsr	loadiff
+
+	lea		palettea,a0
+	lea		paletteb,a1
+	rept	16/2
+	move.l	(a0)+,(a1)+
+	endr
 
 	pea	msgok
 	move.w	#9,-(sp)	; Cconws
@@ -260,29 +268,25 @@ debug	equ 0
 	supexec	MUSIC+0			; init music
 	endif
 
-	move.w    #$27,-(sp)   ; attr  includes everything except volumes and dirs
-	pea       searchpattern; filename
-	move.w    #78,-(sp)    ; Fsfirst
-	trap      #1           ; GEMDOS
-	addq.l    #8,sp
-	tst.l	d0
-	bmi.s	end
+	; "main" loop
 .loop
-	move.w    #47,-(sp)    ; Fgetdta
-	trap      #1           ; GEMDOS
-	addq.l    #2,sp
-	add.l	#30,d0	; offset of file name in DTA
-	move.l	d0,a0
+	lea		13(a6),a6
+	tst.b	(a6)
+	beq.s	end	; no more file to load
+
+	move.l	a6,a0
 	bsr loadfile
 	tst.l	d0
-	bmi.s	end
+	bmi.s	.loop	; try next file
 
-	move.w	d0,-(sp)
+	move.l	a6,-(sp)	; push filename pointer
+	move.w	d0,-(sp)	; push byte count
+
 	move.w	#7,-(sp)	; Crawcin
 	trap	#1			; GEMDOS
 	addq.l	#2,sp
-	move.w	(sp)+,d0
 
+	move.w	(sp)+,d0	; pop byte count
 	lea	filebuffer,a0
 	move.l	framep,a1
 	lea	palettea,a2
@@ -290,22 +294,12 @@ debug	equ 0
 
 	lea		palettea,a0
 	lea		paletteb,a1
-	move.w	#15,d0
-.cpypalb
-	move.w	(a0)+,(a1)+
-	dbra	d0,.cpypalb
-	;pea	palette
-	;move.w	#6,-(sp)	; Setpalette
-	;trap	#14			; XBIOS
-	;addq.l	#6,sp
+	rept	16/2
+	move.l	(a0)+,(a1)+
+	endr
 
-	;move.w	#150,loadiff_current_line
-
-	move.w    #79,-(sp)    ; Fsnext
-	trap      #1           ; GEMDOS
-	addq.l    #2,sp
-	tst.l	d0
-	bge	.loop
+	move.l	(sp)+,a6	; pop filename pointer
+	bra.s	.loop
 
 
 end:
@@ -318,6 +312,7 @@ end:
 	endif
 	supexec uninstall
 
+errorend:
 	; restore palette
 	pea	palettebackup
 	move.w	#6,-(sp)	; Setpalette
@@ -493,7 +488,7 @@ uninstall:
 	; Interrupt handlers
 vbl
 	move.l	#hbl199,$120
-	movem.l	d0-d1/a0-a1,-(sp)
+	movem.l	d0-d1/a0-a1,-(sp)			; SAVE registers
 	move.w	loadiff_current_line,d0
 	;addq.w	#1,d0
 	move.w	#199,d1
@@ -518,10 +513,9 @@ vbl
 	; set palettea
 	lea		palettea,a0
 	lea		$ffff8240.w,a1
-	move.w	#15,d0
-.loop
-	move.w	(a0)+,(a1)+
-	dbra	d0,.loop
+	rept	16/2
+	move.l	(a0)+,(a1)+
+	endr
 
 	; scrolltext
 	if debug
@@ -561,7 +555,7 @@ vbl
 	if debug
 	move.w	#$000,$ffff8240.w	; black
 	endif
-	movem.l	(sp)+,d0-d1/a0-a1
+	movem.l	(sp)+,d0-d1/a0-a1	; restore registers
 oldvbl
 	jmp $0.l
 tmppos
@@ -632,8 +626,6 @@ MUSIC
 	incbin	'TELEPHO3.SND'; SNDH file
 
 	data
-searchpattern
-	dc.b	'*.IFF',0
 fileiddiz
 	dc.b	'FILE_ID.DIZ',0
 	; see http://toshyp.atari.org/en/VT_52_terminal.html
@@ -651,7 +643,7 @@ msgcheck
 msgnotfound
 	dc.b	27,'b',1	; Forground color 1 = red
 	dc.b	' NOT FOUND',27,'b',15,13,10,7,0
-files	;   '12345678.123',0,''
+files	;   '12345678.123',0,''	; 13 characters per entry
 	dc.b	'80.IFF',0,'      '
 	dc.b	'BARCO1.IFF',0,'  '
 	dc.b	'BATMAN.IFF',0,'  '
