@@ -221,9 +221,28 @@ debug	equ 0
 	trap	#1		; GEMDOS
 	addq.l	#6,sp
 
-	move.w	#7,-(sp)	; Crawcin
-	trap	#1
+	; load first IFF
+	pea	msgloading
+	move.w	#9,-(sp)	; Cconws
+	trap	#1		; GEMDOS
+	move.l	#files,2(sp)
+	trap	#1		; GEMDOS
 	addq.l	#2,sp
+	move.l	(sp)+,a0
+	bsr loadfile
+	;tst.w	d0
+	;bmi	.firstloadfailed
+
+	; decode IFF
+	lea	filebuffer,a0
+	move.l	framep,a1
+	lea	palettea,a2
+	bsr	loadiff
+
+	pea	msgok
+	move.w	#9,-(sp)	; Cconws
+	trap	#1		; GEMDOS
+	addq.l	#6,sp
 
 
 	; starting for real...
@@ -234,6 +253,8 @@ debug	equ 0
 	;trap	#1			;
 	;addq.l	#6,sp			;
 	;move.l	d0,oldusp		; store old user stack pointer
+
+	supexec setvideobase
 
 	if	enable_music
 	supexec	MUSIC+0			; init music
@@ -256,13 +277,15 @@ debug	equ 0
 	tst.l	d0
 	bmi.s	end
 
+	move.w	#7,-(sp)	; Crawcin
+	trap	#1			; GEMDOS
+	addq.l	#2,sp
+
 	lea	filebuffer,a0
 	;move.l	physbase,a1
 	move.l	framep,a1
 	lea	palettea,a2
 	bsr	loadiff
-
-	supexec setvideobase
 
 	lea		palettea,a0
 	lea		paletteb,a1
@@ -276,10 +299,6 @@ debug	equ 0
 	;addq.l	#6,sp
 
 	;move.w	#150,loadiff_current_line
-
-	move.w	#7,-(sp)	; Crawcin
-	trap	#1
-	addq.l	#2,sp
 
 	move.w    #79,-(sp)    ; Fsnext
 	trap      #1           ; GEMDOS
