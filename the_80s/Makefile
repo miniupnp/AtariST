@@ -1,3 +1,10 @@
+# 2016 Thomas BERNARD
+#
+# uses mtools package and hmsa tool from hatari to build floppy images
+# uses upx to pack ATARI TOS executables
+#
+# $ apt-get install mtools hatari upx
+#
 AS=vasmm68k_mot
 ASFLAGS=-Ftos -m68000 -no-fpu
 PACKER=upx
@@ -13,8 +20,8 @@ the_80s.st:	the_80s.tos FILE_ID.DIZ knight6.iff
 	hmsa $@ DS
 	MTOOLS_NO_VFAT=1 mmd -i $@ ::AUTO
 	MTOOLS_NO_VFAT=1 mcopy -i $@ -v $< ::/AUTO/THE_80S.PRG
-	MTOOLS_NO_VFAT=1 mcopy -i $@ -v $^ ::
 	MTOOLS_NO_VFAT=1 mcopy -i $@ -v pictures/*.iff ::
+	MTOOLS_NO_VFAT=1 mcopy -i $@ -v $^ ::
 
 the_80s.msa:	the_80s.st
 	$(RM) $@
