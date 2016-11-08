@@ -1,7 +1,7 @@
 AS=vasmm68k_mot
 ASFLAGS=-Ftos -m68000 -no-fpu
 
-all:	hblvbl.tos starf.tos tosfont.tos
+all:	hblvbl.tos starf.tos tosfont.tos border.tos
 
 clean:
 	$(RM) *.ttp *.tos
