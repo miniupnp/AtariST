@@ -700,8 +700,8 @@ hbl199
 	eor.b	#2,$ffff820a.w		; 50Hz/60Hz switch
 	;set palettec
 	lea		palettec,a0
-	lea		$ffff8240.w,a1
-	move.w	#15,d0
+	lea		$ffff8242.w,a1
+	move.w	#14,d0
 .loop
 	move.w	(a0)+,(a1)+
 	dbra	d0,.loop
