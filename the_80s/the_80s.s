@@ -211,7 +211,57 @@ debug	equ 0
 .continuef
 	move.w	#9,-(sp)	; Cconws
 	trap	#1		; GEMDOS
+	move.l	#msgdetect,2(sp)
+	trap	#1		; GEMDOS
 	addq.l	#6,sp
+
+	; to detect TOS version
+	; $4f2 : _sysbase    Base of OS pointer (RAM or ROM TOS)
+	; TOS version is the WORD at offset 2
+
+	; detect the machine (ST / STE / TT / Falcon / etc.)
+	move.l	#'_MCH',d6
+	supexec	get_cookie
+	cmp.l	#-1,d0		; no cookie jar or no cookie found
+	beq.s	.plainst
+	swap	d0
+	tst.w	d0
+	beq.s	.plainst
+	subq.w	#1,d0
+	beq.s	.ste
+	subq.w	#1,d0
+	beq.s	.tt
+	subq.w	#1,d0
+	beq.s	.falcon
+	; unknown machine
+	pea		msgunknown
+	bra.s	.printdetected
+.plainst
+	pea	msgst
+	bra.s	.printdetected
+.ste
+	btst	#20,d0
+	bne.s	.megaste
+	pea	msgste
+	bra.s	.printdetected
+.tt
+	pea	msgtt
+	bra.s	.printdetected
+.falcon
+	pea	msgfalcon
+	bra.s	.printdetected
+.megaste
+	supexec	mstedisablecache
+	pea	msgmegaste
+
+.printdetected
+	move.w	#9,-(sp)	; Cconws
+	trap	#1		; GEMDOS
+	addq.l	#6,sp
+
+	move.w	#7,(sp)		; Crawcin
+	trap	#1			; GEMDOS
+	addq.l	#2,sp
 
 	; load first IFF
 	lea	files,a6
@@ -492,6 +542,9 @@ printslow
 	addq.l	#4,sp
 	rts
 
+mstedisablecache
+	clr.b	$ffff8e21	; disable cache and set 8MHz
+	rts
 
 backuppalette
 	lea	$ffff8240.w,a0
@@ -661,6 +714,7 @@ hbl199
 
 	include '../asmlib/loadfile.s'
 	include '../show_iff/loadiff.s'
+	include '../asmlib/getcooki.s'
 	code
 MUSIC
 	incbin	'TELEPHO3.SND'; SNDH file
@@ -683,6 +737,20 @@ msgcheck
 msgnotfound
 	dc.b	27,'b',1	; Forground color 1 = red
 	dc.b	' NOT FOUND',27,'b',15,13,10,7,0
+msgdetect
+	dc.b	'Detecting machine : ',0
+msgunknown
+	dc.b	'Unknown',13,10,0
+msgst
+	dc.b	'ST',13,10,0
+msgste
+	dc.b	'STe',13,10,0
+msgmegaste
+	dc.b	'Mega STe. disabling cache',13,10,0
+msgfalcon
+	dc.b	'Falcon 030',13,10,0
+msgtt
+	dc.b	'TT 030',13,10,0
 files	;   '12345678.123',0,''	; 13 characters per entry
 	dc.b	'80.IFF',0,'      '
 	dc.b	'BARCO1.IFF',0,'  '

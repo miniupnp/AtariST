@@ -43,4 +43,6 @@ clean:
 	$(PACKER) $@
 	chmod +x $@
 
-the_80s.tos:	the_80s.s ../show_iff/loadiff.s ../asmlib/loadfile.s
+the_80s.tos:	the_80s.s ../show_iff/loadiff.s \
+	../asmlib/loadfile.s \
+	../asmlib/getcooki.s
