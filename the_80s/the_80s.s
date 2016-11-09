@@ -438,6 +438,16 @@ printslow
 	beq.s	.breakloop
 	trap	#1		; GEMDOS
 	cmp.b	#10,3(sp)	; LF ?
+	beq.s	.lf
+	move.b	(a6)+,3(sp)
+	beq.s	.breakloop
+	trap	#1		; GEMDOS
+	cmp.b	#10,3(sp)	; LF ?
+	beq.s	.lf
+	move.b	(a6)+,3(sp)
+	beq.s	.breakloop
+	trap	#1		; GEMDOS
+	cmp.b	#10,3(sp)	; LF ?
 	bne.s	.notlf
 .lf
 	move.b	#7,3(sp)	; BEL
