@@ -171,32 +171,31 @@ debug	equ 0
 	; unshifted char
 	move.w	#25-1,d1
 .ccl1
-	move.l	d0,(a1)+	; 16 black pixels
-	move.l	d0,(a1)+
 	move.l	(a0)+,(a1)+	; 32 font pixels
 	move.l	(a0)+,(a1)+
 	move.l	(a0)+,(a1)+
 	move.l	(a0)+,(a1)+
+	move.l	d0,(a1)+	; 16 black pixels
+	move.l	d0,(a1)+
 	add.l	#144,a0
 	dbra	d1,.ccl1
 
 	; shifted by 2 pixels 7 times
 	move.w	#7*25-1,d1
 .ccl2
-	move.w	#8-1,d2
-.ccl2b
-	move.w	(a2)+,d0
-	swap	d0
-	move.w	6(a2),d0
-	lsl.l	#2,d0
-	swap	d0
-	move.w	d0,(a1)+
-	dbra	d2,.ccl2b
 	rept 4
 	move.w	(a2)+,d0
-	lsl.w	#2,d0
+	lsr.w	#2,d0
 	move.w	d0,(a1)+
 	endr
+	move.w	#8-1,d2
+.ccl2b
+	move.w	-8(a2),d0
+	swap	d0
+	move.w	(a2)+,d0
+	lsr.l	#2,d0
+	move.w	d0,(a1)+
+	dbra	d2,.ccl2b
 	dbra	d1,.ccl2
 
 	move.l	(sp)+,d7	; char index
@@ -350,7 +349,6 @@ putchar
 	eor.w	d1,d0
 	and.w	#%1111111111110001,d0
 	eor.w	d1,d0
-	eor.w	#%1110,d0
 	mulu.w	#25*3*4,d0
 	lea		font,a0
 	adda.l	d0,a0
