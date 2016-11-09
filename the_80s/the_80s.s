@@ -355,6 +355,7 @@ putchar
 	move.l	framep,a1
 	add.l	#160*201,a1
 
+	move.w	#25-1,d0
 	cmp.w	#-16,d1
 	blt.s	.skiptwowords
 	cmp.w	#0,d1
@@ -365,47 +366,63 @@ putchar
 	and.w	#-8,d0
 	adda.w	d0,a1
 
+	move.w	#25-1,d0
 	cmp.w	#320-16,d1
 	bge.s	.skiplasttwowords
 	cmp.w	#320-32,d1
 	bge.s	.skiplastoneword
+	cmp.w	#320-48,d1
+	bge		.donotaddzero
 
-	move.w	#25-1,d0
-.loopline
-	rept	3*2
+.looplinea
+	move.l	(a0)+,d1
+	or.l	d1,(a1)+
+	move.l	(a0)+,d1
+	or.l	d1,(a1)+
+	rept	2*2
 	move.l	(a0)+,(a1)+
 	endr
-	add.l	#160-24,a1
-	dbra	d0,.loopline
+	moveq.l	#0,d1
+	move.l	d1,(a1)+
+	move.l	d1,(a1)+
+	add.l	#160-32,a1
+	dbra	d0,.looplinea
 .exit
 	rts
 
 .skiponeword
-	move.w	#25-1,d0
+	moveq.l	#0,d1
 .looplineb
 	addq.l	#8,a0
 	rept	2*2
 	move.l	(a0)+,(a1)+
 	endr
-	add.l	#160-16,a1
+	move.l	d1,(a1)+
+	move.l	d1,(a1)+
+	add.l	#160-24,a1
 	dbra	d0,.looplineb
 	rts
 
 .skiptwowords
-	move.w	#25-1,d0
+	moveq.l	#0,d1
 .looplinec
 	add.l	#16,a0
 	rept	2
 	move.l	(a0)+,(a1)+
 	endr
-	add.l	#160-8,a1
+	move.l	d1,(a1)+
+	move.l	d1,(a1)+
+	add.l	#160-16,a1
 	dbra	d0,.looplinec
 	rts
 
 .skiplastoneword
-	move.w	#25-1,d0
 .looplined
-	rept	2*2
+	move.l	(a0)+,d1
+	or.l	d1,(a1)+
+	move.l	(a0)+,d1
+	or.l	d1,(a1)+
+	rept	2
 	move.l	(a0)+,(a1)+
 	endr
 	addq.l	#8,a0
@@ -414,15 +431,29 @@ putchar
 	rts
 
 .skiplasttwowords
-	move.w	#25-1,d0
 .looplinee
-	rept	2
-	move.l	(a0)+,(a1)+
-	endr
+	move.l	(a0)+,d1
+	or.l	d1,(a1)+
+	move.l	(a0)+,d1
+	or.l	d1,(a1)+
 	add.l	#16,a0
 	add.l	#160-8,a1
 	dbra	d0,.looplinee
 	rts
+
+.donotaddzero
+.loopline
+	move.l	(a0)+,d1
+	or.l	d1,(a1)+
+	move.l	(a0)+,d1
+	or.l	d1,(a1)+
+	rept	2*2
+	move.l	(a0)+,(a1)+
+	endr
+	add.l	#160-24,a1
+	dbra	d0,.loopline
+	rts
+
 	; *** putchar end ***
 
 	; argument : a6
@@ -545,13 +576,13 @@ vbl
 	blt.s	.ok
 	moveq.l	#0,d0
 .ok
-	add.w	#48,d1
+	add.w	#32+2,d1
 	cmp.w	#320,d1
 	blt.s	.scrollloop
 
 	sub.w	#4,tmppos+2
 	bge.s	.okc
-	add.w	#48,tmppos+2
+	add.w	#32+2,tmppos+2
 	move.w	tmppos,d0
 	addq.w	#1,d0
 	cmp.w	#scrolltextlen,d0
