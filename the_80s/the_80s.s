@@ -83,8 +83,57 @@ debug	equ 0
 	addq.l	#6,sp
 
 	; VT52 part
+
+	; to detect TOS version
+	; $4f2 : _sysbase    Base of OS pointer (RAM or ROM TOS)
+	; TOS version is the WORD at offset 2
+
 	pea	msg1
 	move.w	#9,-(sp)	; Cconws
+	trap	#1		; GEMDOS
+	addq.l	#6,sp
+
+	; detect the machine (ST / STE / TT / Falcon / etc.)
+	move.l	#'_MCH',d6
+	supexec	get_cookie
+	cmp.l	#-1,d0		; no cookie jar or no cookie found
+	beq.s	.plainst
+	swap	d0
+	tst.w	d0
+	beq.s	.plainst
+	subq.w	#1,d0
+	beq.s	.ste
+	subq.w	#1,d0
+	beq.s	.tt
+	subq.w	#1,d0
+	beq.s	.falcon
+	; unknown machine
+	pea		msgunknown
+	bra.s	.printdetected
+.plainst
+	pea	msgst
+	bra.s	.printdetected
+.ste
+	btst	#20,d0
+	bne.s	.megaste
+	pea	msgste
+	bra.s	.printdetected
+.tt
+	pea	msgtt
+	bra.s	.printdetected
+.falcon
+	pea	msgfalcon
+	bra.s	.printdetected
+.megaste
+	supexec	mstedisablecache
+	pea	msgmegaste
+
+.printdetected
+	move.w	#9,-(sp)	; Cconws
+	trap	#1		; GEMDOS
+
+	; show FILE_ID.DIZ
+	move.l	#msgloading,2(sp)
 	trap	#1		; GEMDOS
 	move.l	#fileiddiz,2(sp)
 	trap	#1		; GEMDOS
@@ -220,57 +269,7 @@ debug	equ 0
 .continuef
 	move.w	#9,-(sp)	; Cconws
 	trap	#1		; GEMDOS
-	move.l	#msgdetect,2(sp)
-	trap	#1		; GEMDOS
 	addq.l	#6,sp
-
-	; to detect TOS version
-	; $4f2 : _sysbase    Base of OS pointer (RAM or ROM TOS)
-	; TOS version is the WORD at offset 2
-
-	; detect the machine (ST / STE / TT / Falcon / etc.)
-	move.l	#'_MCH',d6
-	supexec	get_cookie
-	cmp.l	#-1,d0		; no cookie jar or no cookie found
-	beq.s	.plainst
-	swap	d0
-	tst.w	d0
-	beq.s	.plainst
-	subq.w	#1,d0
-	beq.s	.ste
-	subq.w	#1,d0
-	beq.s	.tt
-	subq.w	#1,d0
-	beq.s	.falcon
-	; unknown machine
-	pea		msgunknown
-	bra.s	.printdetected
-.plainst
-	pea	msgst
-	bra.s	.printdetected
-.ste
-	btst	#20,d0
-	bne.s	.megaste
-	pea	msgste
-	bra.s	.printdetected
-.tt
-	pea	msgtt
-	bra.s	.printdetected
-.falcon
-	pea	msgfalcon
-	bra.s	.printdetected
-.megaste
-	supexec	mstedisablecache
-	pea	msgmegaste
-
-.printdetected
-	move.w	#9,-(sp)	; Cconws
-	trap	#1		; GEMDOS
-	addq.l	#6,sp
-
-	move.w	#7,(sp)		; Crawcin
-	trap	#1			; GEMDOS
-	addq.l	#2,sp
 
 	; load first IFF
 	lea	files,a6
@@ -734,6 +733,8 @@ fileiddiz
 	; see http://toshyp.atari.org/en/VT_52_terminal.html
 msg1
 	dc.b	27,'E',27,'e'	; clear screen, show cursor
+msgdetect
+	dc.b	'Detecting machine : ',0
 msgloading
 	dc.b 	"Loading ",0
 msgfont
@@ -746,8 +747,6 @@ msgcheck
 msgnotfound
 	dc.b	27,'b',1	; Forground color 1 = red
 	dc.b	' NOT FOUND',27,'b',15,13,10,7,0
-msgdetect
-	dc.b	'Detecting machine : ',0
 msgunknown
 	dc.b	'Unknown',13,10,0
 msgst
