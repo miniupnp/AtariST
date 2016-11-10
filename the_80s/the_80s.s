@@ -657,6 +657,7 @@ vbl
 	move.w	#$000,$ffff8240.w	; black
 	endif
 	movem.l	(sp)+,d0-d1/a0-a1	; restore registers
+	rte	; skip system VBL routine
 oldvbl
 	jmp $0.l
 tmppos
