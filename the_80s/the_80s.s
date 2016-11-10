@@ -73,6 +73,15 @@ debug	equ 0
 	trap      #14          ; XBIOS
 	lea       12(sp),sp
 
+	lea	palettea,a0
+	move.l	a0,-(sp)
+	move.w	#$fff,(a0)+	;	white
+	move.w	#$f00,(a0)+	;	red
+	move.w	#$0f0,(a0)+	;	green
+	move.w	#6,-(sp)	; Setpalette
+	trap	#14			; XBIOS
+	addq.l	#6,sp
+
 	; VT52 part
 	pea	msg1
 	move.w	#9,-(sp)	; Cconws
