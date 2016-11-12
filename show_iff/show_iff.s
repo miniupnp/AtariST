@@ -34,6 +34,7 @@ loadiff_store_current_line	equ 0
 	bsr _cconws
 	move.l	(sp)+,a0
 
+	lea	filebuffer(pc),a1
 	bsr	loadfile
 	move.w	d0,d7
 	bmi.s	.fileerror

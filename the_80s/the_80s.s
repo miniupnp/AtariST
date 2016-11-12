@@ -140,6 +140,7 @@ debug	equ 0
 	addq.l	#6,sp
 
 	lea	fileiddiz,a0
+	lea	filebuffer,a1
 	bsr loadfile
 
 	tst.w	d0
@@ -199,6 +200,7 @@ debug	equ 0
 	trap	#1		; GEMDOS
 	addq.l	#2,sp
 	move.l	(sp)+,a0
+	lea	filebuffer,a1
 	bsr loadfile
 	tst.w	d0
 	bmi	.fontloadfailed
@@ -280,6 +282,7 @@ debug	equ 0
 	trap	#1		; GEMDOS
 	addq.l	#2,sp
 	move.l	(sp)+,a0
+	lea	filebuffer,a1
 	bsr loadfile
 	tst.w	d0
 	bpl.s	.firstfileok
@@ -333,6 +336,7 @@ debug	equ 0
 	beq.s	end	; no more file to load
 
 	move.l	a6,a0
+	lea	filebuffer,a1
 	bsr loadfile
 	tst.l	d0
 	bmi.s	.loop	; try next file
