@@ -41,6 +41,9 @@ loadiff_store_current_line	equ 0
 
 	bsr	printwdec
 
+	lea	msgloaded(pc),a0
+	bsr	_cconws
+
 	move.w	#7,-(sp)	; Crawcin
 	trap	#1
 	addq.l	#2,sp
@@ -113,6 +116,8 @@ _cconws:
 	include 'loadiff.s'
 
 	data
+msgloaded
+	dc.b	" bytes loaded. Press key to display"
 crlf
 	dc.b	$a,$d,0
 
