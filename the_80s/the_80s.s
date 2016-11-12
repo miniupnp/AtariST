@@ -65,14 +65,13 @@ debug	equ 0
 	move.w    #3,(sp)     ; Logbase
 	trap      #14          ; XBIOS
 	move.l	d0,logbase
-	addq.l    #2,sp        ; correct stack
 
-	move.w    #0,-(sp)    ; resolution (0=ST low, 1=ST Mid)
+	clr.w    (sp)    ; resolution (0=ST low, 1=ST Mid)
 	move.l    physbase,-(sp)
 	move.l    logbase,-(sp)
 	move.w    #5,-(sp)     ; SetScreen
 	trap      #14          ; XBIOS
-	lea       12(sp),sp
+	lea       12(sp),sp	; correct stack
 
 	lea	palettea,a0
 	move.l	a0,-(sp)
@@ -387,7 +386,6 @@ errorend:
 	move.l    logbase,-(sp)
 	move.w    #5,-(sp)     ; SetScreen
 	trap      #14          ; XBIOS
-	lea       12(sp),sp
 
 	clr (sp)
 	trap #1		; Pterm0
