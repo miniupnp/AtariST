@@ -47,7 +47,8 @@ debug	equ 0
 	supexec backuppalette
 
 	move.l	#framebuffer+255,d0
-	clr.b	d0
+	;clr.b	d0
+	sf	d0
 	move.l	d0,framep
 
 	dc.w $a000 ; Line-A init
