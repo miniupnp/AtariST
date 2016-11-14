@@ -806,7 +806,18 @@ scrolltext
 	dc.b	"THE FRONTIERS TOWARD THE HORIZON.  "
 	dc.b	"I'D LIKE TO THANKS ESPECIALLY HATARI AUTHORS, "
 	dc.b	'ZERKMAN AND ATARIJOOKIE   '
-	dc.b	'STAY ATARI!!!                         '
+	dc.b	'STAY ATARI!!!               '
+	dc.b	'ESTRAYK AT KEYBOARD...         '
+	dc.b	'HI! GUYS.  I JUST WANT SEND A SPECIAL GREETING TO '
+	dc.b	'!CUBE  FOR HIS HELP WITH MAXYMISER.     '
+	dc.b	'ALSO TELL THAT THIS SONG IS A TRIBUTE TO KARSTEN OBARSKI'
+	dc.b	"     I HOPE YOU LIKE REMEMBER THE GOOD OLD 80'S TIMES "
+	dc.b	"LISTENING DIZ SONG                      "
+	dc.b	"GREETS TO NANARD FOR HIS PATIENCE MAKING THIS SLIDESHOW "
+	dc.b	"COMPATIBLE WITH MY ATARI MEGASTE.   C U SOON!          "
+	dc.b	"SOME FEW WORDS FROM JOJO073...    "
+	dc.b	"I LIKE THE PIXEL ART AND A BIG GREETING TO "
+	dc.b	"THE GFX RIPPER    BYE                           "
 scrolltextend
 
 scrolltextlen	equ	scrolltextend-scrolltext
