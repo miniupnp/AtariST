@@ -710,8 +710,8 @@ hbl199
 	endr
 	endif
 	eor.b	#2,$ffff820a.w		; 50Hz/60Hz switch
-	;set palettec
-	lea		palettec,a0
+	;set palettec (from color index 1 to 15, skip color 0)
+	lea		palettec+2,a0
 	lea		$ffff8242.w,a1
 	move.w	#14,d0
 .loop
@@ -796,6 +796,7 @@ scrolltext
 	dc.b	'CHECKPOINT   RNO   DHS   LAMERS   THE PIXEL TWINS   '
 	dc.b	'DUNE   AMIGAWAVE   GENESIS PROJECT   SECTOR ONE   '
 	dc.b	'OXYRON   BATMAN GROUP   CAPSULE   CREAM   '
+	dc.b	'KALISTO   ECHELON   '
 	dc.b	'AND ALL WE FORGOT  !!!             '
 	dc.b	'SOME WORDS FROM NANARD WHILE YOU ARE ENJOYING '
 	dc.b	'TRUE 16 COLORS PIXELART :   '
