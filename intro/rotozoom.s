@@ -1,4 +1,4 @@
-; (c) 2016 Thomas BERNARd
+; (c) 2016 Thomas BERNARD
 ; https://github.com/miniupnp/AtariST
 ;
 ; X = zoom * (x*cos(a) - y*sin(a))
@@ -61,6 +61,30 @@
 	move.w	#6,-(sp)	; Setpalette
 	trap	#14			; XBIOS
 	addq.l	#6,sp
+
+
+	; chunky to planar Test
+	move.l	imagep,a0
+	move.l	physbase,a1
+
+	moveq.l	#64-1,d6
+.loopy
+	moveq.l	#4-1,d7
+.loopx
+	rept	16
+	move.b	(a0)+,d2
+	lsr.w	#1,d2	;roxr.w	#1,d2
+	addx.w	d0,d0	; bit plane 0
+	lsr.w	#1,d2	;roxr.w	#1,d2
+	addx.w	d1,d1	; bit plane 1
+	endr
+	move.w	d0,(a1)+
+	move.w	d1,(a1)+
+	addq.l	#4,a1	; skip bitplanes 2 & 3
+	dbra	d7,.loopx
+
+	lea	128(a1),a1
+	dbra	d6,.loopy
 
 	move.w	#7,-(sp)	; Crawcin
 	trap	#1			; GEMDOS
