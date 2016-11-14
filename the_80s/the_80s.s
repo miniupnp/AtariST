@@ -304,7 +304,7 @@ ready_led	equ	1
 	bsr	loadiff
 
 	lea		palettea,a0
-	lea		paletteb,a1
+	lea		paletteb-palettea(a0),a1
 	rept	16/2
 	move.l	(a0)+,(a1)+
 	endr
@@ -343,7 +343,7 @@ ready_led	equ	1
 
 	; "main" loop
 .loop
-	lea		13(a6),a6
+	lea		13(a6),a6		; advance 1 filename
 	tst.b	(a6)
 	beq.s	end	; no more file to load
 
@@ -379,10 +379,11 @@ ready_led	equ	1
 	bsr	loadiff
 
 	lea		palettea,a0
-	lea		paletteb,a1
-	rept	16/2
+	lea		paletteb-palettea(a0),a1
+	moveq.l	#8-1,d0
+.palcpyl
 	move.l	(a0)+,(a1)+
-	endr
+	dbra	d0,.palcpyl
 
 	move.l	(sp)+,a6	; pop filename pointer
 	bra.s	.loop
