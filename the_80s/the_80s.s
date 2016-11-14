@@ -7,6 +7,7 @@
 enable_music	equ 1
 loadiff_store_current_line	equ 1
 debug	equ 0
+ready_led	equ	1
 
 
 	; MACRO(S) DEFINITION(S)
@@ -313,6 +314,17 @@ debug	equ 0
 	trap	#1		; GEMDOS
 	addq.l	#6,sp
 
+	if ready_led
+	; "status" led at the bottom of the screen. Color 15
+	move.l	framep,a1
+	add.l	#160*228+152,a1
+	moveq.l	#-1,d0
+	move.l	d0,(a1)+
+	move.l	d0,(a1)+
+	lea	152(a1),a1
+	move.l	d0,(a1)+
+	move.l	d0,(a1)+
+	endif
 
 	; starting for real...
 
@@ -335,6 +347,10 @@ debug	equ 0
 	tst.b	(a6)
 	beq.s	end	; no more file to load
 
+	if ready_led
+	move.w #$0fb0,palettec+30	; yellow = LOADING
+	endif
+
 	move.l	a6,a0
 	lea	filebuffer,a1
 	bsr loadfile
@@ -344,9 +360,17 @@ debug	equ 0
 	move.l	a6,-(sp)	; push filename pointer
 	move.w	d0,-(sp)	; push byte count
 
+	if ready_led
+	move.w #$00f0,palettec+30	; green = READY
+	endif
+
 	move.w	#7,-(sp)	; Crawcin
 	trap	#1			; GEMDOS
 	addq.l	#2,sp
+
+	if ready_led
+	move.w #$00bf,palettec+30	; blue = WORKING
+	endif
 
 	move.w	(sp)+,d0	; pop byte count
 	lea	filebuffer,a0
