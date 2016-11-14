@@ -26,6 +26,7 @@
 	;move.l    A0,pParamblk       ; Pointer parameter block LINEA
 	move.l    A1,pFnthdr         ; Pointer system fonts
 	;move.l    a2,pFktadr         ; Pointer start addr. Line-A routines
+	dc.w	$a00a			; Line-A Hide mouse
 	movem.l   (a7)+,d0-d2/a0-a2  ; Restore registers
 
 
