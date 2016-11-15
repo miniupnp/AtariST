@@ -345,8 +345,10 @@ ready_led	equ	1
 .loop
 	lea		13(a6),a6		; advance 1 filename
 	tst.b	(a6)
-	beq.s	end	; no more file to load
+	bne.s	.tryload
+	lea	files,a6		; Loop to first file
 
+.tryload
 	if ready_led
 	move.w #$0fb0,palettec+30	; yellow = LOADING
 	endif
@@ -367,6 +369,10 @@ ready_led	equ	1
 	move.w	#7,-(sp)	; Crawcin
 	trap	#1			; GEMDOS
 	addq.l	#2,sp
+	swap	d0			; scancode
+; http://www.atari-wiki.com/?title=Atari_ST_Scancode_diagram_by_Unseen_Menace
+	cmp.b	#1,d0	; ESC
+	beq.s	end
 
 	if ready_led
 	move.w #$00bf,palettec+30	; blue = WORKING
