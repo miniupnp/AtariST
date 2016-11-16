@@ -25,4 +25,19 @@ CosmosExMediaPlayer:
 prgshow:
     C program used to parse .PRG/.TOS/.TTP Atari TOS execuables.
 
+ym_digit:
+    play digitized sound on plain ST with YM2149F
+
+asmlib:
+    various 68k ASM subroutines
+
+show_iff:
+    Decode Amiga & Atari ST Deluxe Paint IFF files
+
+intro:
+    various intro effects
+
+the_80s:
+    source of the 80's slideshow by STratosphere
+
 Thomas Bernard
