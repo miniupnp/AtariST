@@ -29,8 +29,9 @@ ready_led	equ	1
     move.l  $0c(a5),d0      ; length of text segment
     add.l   $14(a5),d0      ; length of data segment
 	add.l   $1c(a5),d0      ; length of bss segment
-    add.l   #$1000,d0       ; length of stackpointer
-	add.l   #$100,d0        ; length of basepage
+    ;add.l   #$1000,d0       ; length of stackpointer
+	;add.l   #$100,d0        ; length of basepage
+	add.l	#$1100,d0
 	move.l  a5,d1           ; address to basepage
 	add.l   d0,d1           ; end of program
 	and.l   #-2,d1          ; make address even
