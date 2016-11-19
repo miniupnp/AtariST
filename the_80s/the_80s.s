@@ -614,11 +614,14 @@ install
 	move.l	$70,oldvbl+2
 	move.l	#vbl,$70
 	move.b 	#0,$fffffa1b.w 	;Timer B stop
+	move.b	$484.w,conterm_backup
+	move.b	#$8,$484.w		; key click OFF
 	rts
 
 uninstall:
 	move.l	oldvbl+2,$70
 	move.b 	#0,$fffffa1b.w 	;Timer B stop
+	move.b	conterm_backup,$484.w
 	rts
 
 	; Interrupt handlers
@@ -880,6 +883,8 @@ font
 filebuffer
 	ds.b	32000
 hblcount2
+	ds.b	1
+conterm_backup
 	ds.b	1
 framebuffer
 	ds.b	160*248
