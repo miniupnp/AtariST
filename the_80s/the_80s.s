@@ -367,7 +367,19 @@ ready_led	equ	1
 	move.w #$00f0,palettec+30	; green = READY
 	endif
 
-	move.w	#7,-(sp)	; Crawcin
+	move.w	#8*50,d7	; Maximum time between images
+.waitkey
+	move.w    #37,-(sp)    ; Vsync
+	trap      #14          ; XBIOS
+	move.w	#11,(sp)	; Cconis = Character console is waiting
+	trap	#1			; GEMDOS   Check whether a character is waiting in the standard input buffer
+	addq.l	#2,sp
+	subq.w	#1,d7
+	beq.s	.nextimage
+	tst.w	d0
+	beq.s	.waitkey
+
+	move.w	#7,-(sp)	; Crawcin = Read a character unbuffered from standard input device
 	trap	#1			; GEMDOS
 	addq.l	#2,sp
 	swap	d0			; scancode
@@ -375,6 +387,7 @@ ready_led	equ	1
 	cmp.b	#1,d0	; ESC
 	beq.s	end
 
+.nextimage
 	if ready_led
 	move.w #$00bf,palettec+30	; blue = WORKING
 	endif
@@ -393,7 +406,7 @@ ready_led	equ	1
 	dbra	d0,.palcpyl
 
 	move.l	(sp)+,a6	; pop filename pointer
-	bra.s	.loop
+	bra		.loop
 
 
 end:
@@ -695,7 +708,7 @@ vbl
 	move.w	#$000,$ffff8240.w	; black
 	endif
 	movem.l	(sp)+,d0-d1/a0-a1	; restore registers
-	rte	; skip system VBL routine
+	;rte	; skip system VBL routine
 oldvbl
 	jmp $0.l
 tmppos
