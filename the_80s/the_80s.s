@@ -410,10 +410,6 @@ ready_led	equ	1
 
 
 end:
-	move.w	#7,-(sp)	; Crawcin
-	trap	#1			; GEMDOS
-	addq.l	#2,sp
-
 	if	enable_music
 	supexec MUSIC+4			; de-init music
 	endif
