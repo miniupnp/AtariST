@@ -15,15 +15,20 @@ all:	the_80s.tos PLAY_VBL.tos
 
 floppy:	the_80s.msa
 
-the_80s.st:	the_80s.tos FILE_ID.DIZ knight6.iff
+the_80s.st:	the_80s.tos FILE_ID.DIZ knight6.iff \
+			../bootsector/detect.bin
 	$(RM) $@
 	hmsa $@ DS
 	MTOOLS_NO_VFAT=1 mmd -i $@ ::AUTO
 	MTOOLS_NO_VFAT=1 mcopy -i $@ -v $< ::/AUTO/THE_80S.PRG
 	MTOOLS_NO_VFAT=1 mcopy -i $@ -v pictures/*.iff ::
 	MTOOLS_NO_VFAT=1 mcopy -i $@ -v $^ ::
+	../bootsector/injectbs $@ ../bootsector/detect.bin
 
-the_80s.msa:	the_80s.st
+../bootsector/detect.bin:	../bootsector/detect.s
+	$(MAKE) -C ../bootsector detect.bin injectbs
+
+%.msa:	%.st
 	$(RM) $@
 	hmsa $< || true
 
