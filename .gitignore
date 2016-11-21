@@ -1,6 +1,7 @@
 *.ttp
 *.tos
 *.o
+*.bin
 ym_digit/generate_levels
 prgshow/prgshow
 m68k-atari-mint-build/build
@@ -10,3 +11,4 @@ m68k-atari-mint-build/archives
 vasm_vbcc_build/bin
 vasm_vbcc_build/build
 vasm_vbcc_build/archives
+bootsector/injectbs
