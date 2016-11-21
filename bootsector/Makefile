@@ -13,9 +13,9 @@ CFLAGS=-Wall -O
 
 .PHONY:	all floppy clean
 
-all:	injectbs bs1.bin
+all:	injectbs bs1.bin detect.bin
 
-floppy:	bs1.msa
+floppy:	bs1.msa detect.msa
 
 %.st:	%.bin injectbs
 	$(RM) $@
@@ -34,6 +34,7 @@ clean:
 
 %.ttp:	%.s
 	$(AS) -Ftos $(ASFLAGS) -o $@ $<
+	chmod +x $@
 
 %.tos:	%.s
 	$(AS) -Ftos $(ASFLAGS) -o $@ $<
