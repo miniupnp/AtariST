@@ -56,6 +56,7 @@ int inject(const char * floppyfile, const char * bsfile)
 	unsigned char bootsector[512];
 	ssize_t n;
 	unsigned short checksum;
+	int i;
 
 	ffloppy = fopen(floppyfile, "rb");
 	if(!ffloppy)
@@ -76,6 +77,9 @@ int inject(const char * floppyfile, const char * bsfile)
 	if(n <= 0)
 		return -4;
 	printf("%u bytes loaded\n", (unsigned)n);
+	/* pad with 0 */
+	for(i = 30 + n; i < 512; i++)
+		bootsector[i] = 0;
 	/* put BRA */
 	bootsector[0] = 0x60;
 	bootsector[1] = 0x1c;
