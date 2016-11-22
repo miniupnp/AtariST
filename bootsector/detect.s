@@ -7,7 +7,7 @@
 
 start
 	lea	msg(pc),a0
-	bsr.s	cconws
+	bsr	cconws
 
 	move.l	$5a0.w,d0
 	beq.s	.nocookie
@@ -62,7 +62,28 @@ end
 	bsr.s	printwdec
 
 	lea	msgkb(pc),a0
-	;bsr.s	cconws
+	bsr.s	cconws
+
+	clr.w	-(sp)		; NULL terminator
+	subq.l	#4,sp
+	move.l	$4f2,a0		; _sysbase	 Base of OS pointer (RAM or ROM TOS)
+	move.b	2(a0),d0	; MAJOR version
+	add.b	#'0',d0
+	move.b	d0,(sp)
+	move.b	#'.',1(sp)
+	move.b	3(a0),d0	; MINOR version
+	move.b	d0,d1
+	lsr.b	#4,d0
+	add.b	#'0',d0
+	move.b	d0,2(sp)
+	and.b	#15,d1
+	add.b	#'0',d1
+	move.b	d1,3(sp)
+	move.l	sp,a0
+	bsr.s	cconws
+	addq.l	#6,sp
+
+	lea	crlf(pc),a0
 
 	;move.w	#7,-(sp)	; Crawcin
 	;trap	#1			; GEMDOS
@@ -118,6 +139,7 @@ msgunknown
 msgstram
 	dc.b	'   ST RAM : ',0
 msgkb
-	dc.b	'kB',13,10,0
-;crlf
-;	dc.b	13,10,0
+	dc.b	'kB',13,10
+	dc.b	'TOS ',0
+crlf
+	dc.b	13,10,0
