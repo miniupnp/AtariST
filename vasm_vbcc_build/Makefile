@@ -11,6 +11,7 @@
 URLGET=$(shell which wget || echo "`which curl` -O")
 TAR=tar
 CP=cp
+INSTALL=install
 
 VASMARCHIVE=vasm.tar.gz
 VASMURL=http://sun.hasenbraten.de/vasm/release/$(VASMARCHIVE)
@@ -23,12 +24,15 @@ VASMBIN=vasmm68k_mot
 VBCCARCHIVE=vbcc.tar.gz
 VBCCURL=http://www.ibaug.de/vbcc/$(VBCCARCHIVE)
 VBCCBIN=vc
+VBCCBASE=http://server.owl.de/~frank/vbcc/2016-03-23/
+VBCCCONFIG=vbcc_unix_config.tar.gz
+VBCCTARGET=vbcc_target_m68k-atari.tar.gz
 
 VLINKARCHIVE=vlink.tar.gz
 VLINKURL=http://sun.hasenbraten.de/vlink/release/$(VLINKARCHIVE)
 VLINKBIN=vlink
 
-.PHONY:	archives build bin all clean
+.PHONY:	archives build bin all clean install
 
 all:	vasm vlink vbcc
 
@@ -43,6 +47,19 @@ bin:
 
 clean:
 	$(RM) -r archives build bin
+
+install:	vasm vlink vbcc archives/$(VBCCCONFIG) archives/$(VBCCTARGET)
+	@if [ -z "$(VBCC)" ] ; then \
+		echo "Please set VBCC environment variable." ;\
+		echo "for example :" ;\
+		echo "$$ make install VBCC=\"/usr/local/vbcc\"" ;\
+		false;\
+	fi
+	$(INSTALL) -d $(VBCC)/bin
+	$(INSTALL) bin/* $(VBCC)/bin
+	cd $(VBCC); $(TAR) xzf $(PWD)/archives/$(VBCCCONFIG)
+	cd $(VBCC); $(TAR) xzf $(PWD)/archives/$(VBCCTARGET)
+	@echo "Install done. Don't forget to set VBCC and PATH environment vars."
 
 vasm:	bin/$(VASMBIN)
 
@@ -84,3 +101,9 @@ build/vbcc.src:	archives/$(VBCCARCHIVE) | build
 
 archives/$(VBCCARCHIVE):	| archives
 	cd archives; $(URLGET) $(VBCCURL)
+
+archives/$(VBCCCONFIG):	| archives
+	cd archives; $(URLGET) $(VBCCBASE)$(notdir $@)
+
+archives/$(VBCCTARGET):	| archives
+	cd archives; $(URLGET) $(VBCCBASE)$(notdir $@)
