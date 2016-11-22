@@ -56,7 +56,7 @@ end
 	lea	msgstram(pc),a0
 	bsr.s	cconws
 
-	move.l	$42e,d0		; phystop     Physical RAM top
+	move.l	$42e.w,d0	; phystop     Physical RAM top
 	lsr.l	#5,d0		; bytes to kilo-bytes
 	lsr.l	#5,d0		; bytes to kilo-bytes
 	bsr.s	printwdec
@@ -65,21 +65,20 @@ end
 	bsr.s	cconws
 
 	clr.w	-(sp)		; NULL terminator
-	subq.l	#4,sp
-	move.l	$4f2,a0		; _sysbase	 Base of OS pointer (RAM or ROM TOS)
-	move.b	2(a0),d0	; MAJOR version
-	add.b	#'0',d0
-	move.b	d0,(sp)
-	move.b	#'.',1(sp)
-	move.b	3(a0),d0	; MINOR version
-	move.b	d0,d1
-	lsr.b	#4,d0
-	add.b	#'0',d0
-	move.b	d0,2(sp)
-	and.b	#15,d1
-	add.b	#'0',d1
-	move.b	d1,3(sp)
+	subq.l	#4,sp		; allocate 4 bytes on stack
+	move.l	$4f2.w,a0	; _sysbase	 Base of OS pointer (RAM or ROM TOS)
+	addq.l	#2,a0		; offset 2 : TOS version
+	move.b	(a0)+,d0	; MAJOR version
+	move.b	(a0),d1		; MINOR version
 	move.l	sp,a0
+	move.b	d0,(a0)+
+	clr.b	(a0)+
+	move.b	d1,d0
+	lsr.b	#4,d0
+	move.b	d0,(a0)+
+	and.b	#15,d1
+	move.b	d1,(a0)+
+	add.l	#$302e3030,-(a0)		; '0.00'
 	bsr.s	cconws
 	addq.l	#6,sp
 
