@@ -7,6 +7,7 @@ I use vasm to assemble 68000 code :
 http://sun.hasenbraten.de/vasm/
 built with motorola syntax :
 $ make CPU=m68k SYNTAX=mot
+(see vasm_vbcc_build)
 
 steauply:
     Audio player for Atari STE machines, using DMA
@@ -39,5 +40,9 @@ intro:
 
 the_80s:
     source of the 80's slideshow by STratosphere
+
+vasm_vbcc_build:
+    download / compile / install cross assembler and cross compiler
+    VASM and VBCC for the AtariST
 
 Thomas Bernard
