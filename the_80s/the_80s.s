@@ -809,6 +809,8 @@ msgtt
 	dc.b	'TT 030',13,10,0
 files	;   '12345678.123',0,''	; 13 characters per entry
 	dc.b	'80.IFF',0,'      '
+	dc.b	'MIEDO01.IFF',0,' '
+	dc.b	'SUPERDH2.IFF',0,''
 	dc.b	'BARCO1.IFF',0,'  '
 	dc.b	'BATMAN.IFF',0,'  '
 	dc.b	'BRUCE.IFF',0,'   '
