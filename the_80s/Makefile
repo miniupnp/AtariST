@@ -9,11 +9,20 @@ AS=vasmm68k_mot
 ASFLAGS=-Ftos -m68000 -no-fpu
 PACKER=upx
 
-.PHONY:	all floppy clean
+.PHONY:	all floppy zip clean
 
 all:	the_80s.tos PLAY_VBL.tos
 
 floppy:	the_80s.msa
+
+zip:	the_80s.zip
+
+# zip options :
+# -j : junk path
+# -k : MSDOS compatible names and attributes
+the_80s.zip:	the_80s.tos FILE_ID.DIZ knight6.iff
+	$(RM) $@
+	zip -j -k $@ $^ pictures/*.iff
 
 the_80s.st:	the_80s.tos FILE_ID.DIZ knight6.iff \
 			../bootsector/detect.bin
