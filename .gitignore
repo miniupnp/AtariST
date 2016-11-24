@@ -8,6 +8,7 @@ m68k-atari-mint-build/build
 m68k-atari-mint-build/archives
 *.st
 *.msa
+*.zip
 vasm_vbcc_build/bin
 vasm_vbcc_build/build
 vasm_vbcc_build/archives
