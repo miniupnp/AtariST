@@ -63,6 +63,11 @@
 	addq.l	#6,sp
 
 
+mainloop
+	move.w	#37,-(sp)	; Vsync
+	trap	#14			; XBIOS
+	addq.l	#2,sp
+
 	; chunky to planar Test
 	move.l	imagep,a0
 	move.l	physbase,a1
@@ -85,6 +90,12 @@
 
 	lea	128(a1),a1
 	dbra	d6,.loopy
+
+	move.w	#11,-(sp)	; Cconis
+	trap	#1			; GEMDOS
+	addq.l	#2,sp
+	tst.w	d0
+	beq		mainloop
 
 	move.w	#7,-(sp)	; Crawcin
 	trap	#1			; GEMDOS
