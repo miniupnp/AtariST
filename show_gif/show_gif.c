@@ -68,11 +68,12 @@ int main(int argc, char ** argv)
 	ULONG ts;
 	LONG t0, t1;
 
-	filename = "borregas.gif";
-	//filename = "cirrhose.gif";
+	filename = "NGIFLIB\\SAMPLES\\borregas.gif";
+	filename = "NGIFLIB\\SAMPLES\\cirrhose.gif";
 	//filename = "amigagry.gif";
 	//filename = "nomercyi.gif";
 	//filename = "e7monsta.gif"
+	//filename = "NGIFLIB\\SAMPLES\\far_away.gif";
 
 	log = fopen("show_gif.log", "a");
 	memset(&gif, 0, sizeof(gif));
