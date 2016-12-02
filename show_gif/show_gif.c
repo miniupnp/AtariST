@@ -100,6 +100,7 @@ int main(int argc, char ** argv)
 		u16 palette[16];
 		fprintf(log, "time=%ldms", (t1 - t0)*5);
 		printf("OK\n");
+		(void)Cursconf(0, 0);	/* hide cursor */
 		img = gif->cur_img;
 		for(i = 0; i < 16; i++) {
 			palette[i] = to_st_palette(img->palette[i].r,
