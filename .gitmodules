@@ -1,0 +1,3 @@
+[submodule "show_gif/ngiflib"]
+	path = show_gif/ngiflib
+	url = https://miniupnp%40free.fr@github.com/miniupnp/ngiflib.git
