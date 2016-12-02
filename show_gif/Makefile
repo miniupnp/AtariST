@@ -18,3 +18,5 @@ clean:
 
 show_gif.tos:	show_gif.o ngiflib/ngiflib.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
+
+show_gif.o:	show_gif.c ngiflib/ngiflib.h
