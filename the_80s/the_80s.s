@@ -828,6 +828,7 @@ fontfile
 	dc.b	'KNIGHT6.IFF',0
 
 scrolltext
+	dc.b	' HELLO COOKIE.PARIS PARTY !!!      '
 	dc.b	' WELCOME TO OUR FIRST RELEASE CALLED'
 	dc.b	'      THE 80S       '
 	dc.b	'THE CREDITS FOR THIS AWESOME SLIDESHOW ARE'
