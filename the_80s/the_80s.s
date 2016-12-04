@@ -86,6 +86,8 @@ ready_led	equ	1
 
 	; VT52 part
 
+	supexec	mstedisablecache
+
 	; to detect TOS version
 	; $4f2 : _sysbase    Base of OS pointer (RAM or ROM TOS)
 	; TOS version is the WORD at offset 2
@@ -127,7 +129,6 @@ ready_led	equ	1
 	pea	msgfalcon
 	bra.s	.printdetected
 .megaste
-	supexec	mstedisablecache
 	pea	msgmegaste
 
 .printdetected
@@ -594,9 +595,48 @@ printslow
 	addq.l	#4,sp
 	rts
 
+	; thanks to zerkman for the trick.
+	; we write to $ff8e21 just as we are on a Mega Ste
+	; If we are not, this will trigger a BUS ERROR
+	; that we recover without problem :)
 mstedisablecache
-	clr.b	$ffff8e21	; disable cache and set 8MHz
+	move.l	$008.w,d0	; save Bus error vector
+	move.l	#mybuserror,$008.w
+	clr.b	$ffff8e21.w	; disable cache and set 8MHz
+	move.l	d0,$008.w	; restore Bus error vector
 	rts
+
+mybuserror
+	; 68000 Bus or Address error exception stack frame :
+	; $00   R/W | I/N | FUNCTION CODE
+	; $02   ACCESS ADDRESS HIGH
+	; $04   ACCESS ADDRESS LOW
+	; $06   INSTRUCTION REGISTER
+	; $08   STATUS REGISTER
+	; $0A   PC HIGH
+	; $0C   PC LOW
+	; 68010 Bus and Address error stack frame :
+	; $00   STATUS REGISTER
+	; $02   PC HIGH
+	; $04   PC LOW
+	; $06   1 0 0 0 | VECTOR OFFSET ($8xxx)
+	; $08   SPECIAL STATUS WORD
+	; ...
+	cmp.w	#$8008,6(sp)
+	beq.s	.is68010frame
+	cmp.w	#$A008,6(sp)
+	beq.s	.is68020shortframe
+	cmp.w	#$B008,6(sp)
+	beq.s	.is68020longframe
+	addq.l	#8,sp
+	rte
+.is68010frame
+	clr.w	8(sp)
+	rte
+.is68020shortframe
+.is68020longframe
+	clr.w	$a(sp)
+	rte
 
 backuppalette
 	lea	$ffff8240.w,a0
