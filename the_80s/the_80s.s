@@ -75,7 +75,7 @@ ready_led	equ	1
 	trap      #14          ; XBIOS
 	lea       12(sp),sp	; correct stack
 
-	lea	palettea,a0
+	lea	paletteb,a0
 	move.l	a0,-(sp)
 	move.w	#$fff,(a0)+	;	white
 	move.w	#$f00,(a0)+	;	red
@@ -305,12 +305,6 @@ ready_led	equ	1
 	lea	palettea,a2
 	bsr	loadiff
 
-	lea		palettea,a0
-	lea		paletteb-palettea(a0),a1
-	rept	16/2
-	move.l	(a0)+,(a1)+
-	endr
-
 	pea	msgok
 	move.w	#9,-(sp)	; Cconws
 	trap	#1		; GEMDOS
@@ -327,6 +321,37 @@ ready_led	equ	1
 	move.l	d0,(a1)+
 	move.l	d0,(a1)+
 	endif
+
+	; fade out
+
+	moveq.l	#-1,d7
+.fadeloop:
+	lea	paletteb,a0
+	move.l	a0,-(sp)
+	move.w	d7,d1
+	lsr.w	#1,d1
+	move.w	d1,(a0)+	;	white
+	move.w	d1,d2
+	and.w	#$f00,d2	;	red
+	move.w	d2,(a0)+
+	move.w	d1,d2
+	and.w	#$0f0,d2
+	move.w	d2,(a0)+	;	green
+	move.w	#6,-(sp)	; Setpalette
+	trap	#14			; XBIOS
+	move.w	#37,(sp)    ; Vsync
+	trap	#14         ; XBIOS
+	addq.l	#6,sp
+
+	sub.w	#$1111,d7
+	bcc.s	.fadeloop
+
+	; copy palettea => paletteb
+	lea		palettea,a0
+	lea		paletteb-palettea(a0),a1
+	rept	16/2
+	move.l	(a0)+,(a1)+
+	endr
 
 	; starting for real...
 

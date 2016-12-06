@@ -28,7 +28,6 @@ Tested on : Mega STe (TOS x es)
 TODO :
  run OK on 60HZ machines ?
  test with EMUTOS
- fade out between VT52 part and slideshow
  proper ASCII logo
 
 Programming notes :
