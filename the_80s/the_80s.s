@@ -689,12 +689,13 @@ vbl
 	move.w	d0,d1
 .nopalswap
 	move.b 	#0,$fffffa1b.w 	;Timer stop
-	;move.b	#199,$fffffa21.w 	;Counter value
 	move.b	d1,$fffffa21.w 	;Counter value
 	move.b 	#8,$fffffa1b.w 	;Timer start
 
+	if debug
 	;move.w	#$00f,$ffff8240.w	; blue
 	move.w	#$000,$ffff8240.w	; black
+	endif
 	if	enable_music
 	bsr 	MUSIC+8			; call music
 	endif
