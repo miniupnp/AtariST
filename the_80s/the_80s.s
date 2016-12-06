@@ -835,12 +835,12 @@ msgfont
 	dc.b	"Loading font ",0
 msgok
 	dc.b	27,'b',2	; Forground color 2=green
-	dc.b	' OK',27,'b',15,13,10,7,0
+	dc.b	' OK',27,'b',3,13,10,7,0
 msgcheck
 	dc.b	'Checking ',0
 msgnotfound
 	dc.b	27,'b',1	; Forground color 1 = red
-	dc.b	' NOT FOUND',27,'b',15,13,10,7,0
+	dc.b	' NOT FOUND',27,'b',3,13,10,7,0
 msgunknown
 	dc.b	'Unknown',13,10,0
 msgst
