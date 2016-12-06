@@ -25,9 +25,20 @@ LONG get200hz(void)
 	return *((LONG*)0x4ba);
 }
 
+#if 0
 UWORD to_st_palette(UBYTE r, UBYTE g, UBYTE b)
 {
-	/* TODO : STe Palette */
+	return ((((UWORD)r & 0xe0) << 3)) | ((g & 0xe0) >> 1) | (b >> 5);
+}
+#endif
+
+UWORD to_ste_palette(UBYTE r, UBYTE g, UBYTE b)
+{
+	WORD w;	/* STe Palette entry : 0000rRRRgGGGbBBB */
+	/* r/g/b is LSB of 4 bit color value, RRR/GGG/BBB are MSB */
+	w = (((UWORD)r & 0xe0) << 3) | (((UWORD)r & 0x10) << 7);
+	w |= ((g & 0xe0) >> 1) | ((g & 0x10) << 3);
+	w |= (b >> 5) | ((b & 0x10) >> 1);
 	return ((((UWORD)r & 0xe0) << 3)) | ((g & 0xe0) >> 1) | (b >> 5);
 }
 
@@ -103,9 +114,9 @@ int main(int argc, char ** argv)
 		(void)Cursconf(0, 0);	/* hide cursor */
 		img = gif->cur_img;
 		for(i = 0; i < 16; i++) {
-			palette[i] = to_st_palette(img->palette[i].r,
-			                           img->palette[i].g,
-			                           img->palette[i].b);
+			palette[i] = to_ste_palette(img->palette[i].r,
+			                            img->palette[i].g,
+			                            img->palette[i].b);
 		}
 		Setpalette(palette);
 		t0 = Supexec(get200hz);
