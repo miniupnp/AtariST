@@ -39,32 +39,36 @@ UWORD to_ste_palette(UBYTE r, UBYTE g, UBYTE b)
 	w = (((UWORD)r & 0xe0) << 3) | (((UWORD)r & 0x10) << 7);
 	w |= ((g & 0xe0) >> 1) | ((g & 0x10) << 3);
 	w |= (b >> 5) | ((b & 0x10) >> 1);
-	return ((((UWORD)r & 0xe0) << 3)) | ((g & 0xe0) >> 1) | (b >> 5);
+	return w;
+}
+
+void c2p_line(UWORD * planar, UBYTE * chunky, int width)
+{
+	int x, i, j;
+	UWORD p[4];
+	UBYTE pixel;
+
+	for(x = (width + 15) >> 4; x > 0; x--) {
+		for(i = 16; i > 0; i--) {
+			pixel = *chunky++;
+			for(j = 0; j < 4; j++) {
+				p[j] = (p[j] << 1) | (pixel & 1);
+				pixel >>= 1;
+			}
+		}
+		*planar++ = p[0];
+		*planar++ = p[1];
+		*planar++ = p[2];
+		*planar++ = p[3];
+	}
 }
 
 void c2p(UWORD * planar, UBYTE * chunky, int width, int height)
 {
-	int x, y, i, j;
-	UWORD p[4];
-	UBYTE pixel;
-	for(y = height; y > 0; y--) {
-		for(x = (width + 15) >> 4; x > 0; x--) {
-			for(i = 16; i > 0; i--) {
-				pixel = *chunky++;
-				for(j = 0; j < 4; j++) {
-					p[j] = (p[j] << 1) | (pixel & 1);
-					pixel >>= 1;
-				}
-			}
-			*planar++ = p[0];
-			*planar++ = p[1];
-			*planar++ = p[2];
-			*planar++ = p[3];
-		}
-		if(width != 320) {
-			planar += ((320 - width) >> 4) * 4;
-			chunky += (width & 15) - (((width & 15)+15) & 16);
-		}
+	for(; height > 0; height--) {
+		c2p_line(planar, chunky, width);
+		planar += 80;	/* line of ST frame buffer is 320 pixels = 80 words */
+		chunky += width;
 	}
 }
 
