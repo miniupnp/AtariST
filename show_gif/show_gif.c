@@ -42,13 +42,13 @@ UWORD to_ste_palette(UBYTE r, UBYTE g, UBYTE b)
 	return w;
 }
 
-void c2p_line(UWORD * planar, UBYTE * chunky, int width)
+void c2p_line(UWORD * planar, UBYTE * chunky, int count)
 {
-	int x, i, j;
+	int i, j;
 	UWORD p[4];
 	UBYTE pixel;
 
-	for(x = (width + 15) >> 4; x > 0; x--) {
+	for(; count > 0; count--) {
 		for(i = 16; i > 0; i--) {
 			pixel = *chunky++;
 			for(j = 0; j < 4; j++) {
@@ -65,8 +65,10 @@ void c2p_line(UWORD * planar, UBYTE * chunky, int width)
 
 void c2p(UWORD * planar, UBYTE * chunky, int width, int height)
 {
+	int count;
+	count = (width + 15) >> 4;	/* word per plane / line count */
 	for(; height > 0; height--) {
-		c2p_line(planar, chunky, width);
+		c2p_line(planar, chunky, count);
 		planar += 80;	/* line of ST frame buffer is 320 pixels = 80 words */
 		chunky += width;
 	}
