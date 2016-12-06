@@ -4,6 +4,13 @@
 
 size_t __stack = 65536; /* 64KB stack-size */
 
+#define ASM_C2P_LINE
+
+#ifdef ASM_C2P_LINE
+extern void c2p_line(UWORD * planar, UBYTE * chunky, int count);
+#endif
+
+
 void fprintf_ts(FILE *f, ULONG ts)
 {
 	/* http://toshyp.atari.org/en/004009.html
@@ -42,6 +49,7 @@ UWORD to_ste_palette(UBYTE r, UBYTE g, UBYTE b)
 	return w;
 }
 
+#ifndef ASM_C2P_LINE
 void c2p_line(UWORD * planar, UBYTE * chunky, int count)
 {
 	int i, j;
@@ -62,6 +70,7 @@ void c2p_line(UWORD * planar, UBYTE * chunky, int count)
 		*planar++ = p[3];
 	}
 }
+#endif
 
 void c2p(UWORD * planar, UBYTE * chunky, int width, int height)
 {
