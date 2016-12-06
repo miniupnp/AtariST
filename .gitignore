@@ -13,3 +13,4 @@ vasm_vbcc_build/bin
 vasm_vbcc_build/build
 vasm_vbcc_build/archives
 bootsector/injectbs
+*.log
