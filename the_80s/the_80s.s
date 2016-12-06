@@ -680,7 +680,8 @@ vbl
 	move.w	loadiff_current_line,d0
 	;addq.w	#1,d0
 	move.w	#199,d1
-	cmp.w	d1,d0
+	;cmp.w	d1,d0
+	cmp.w	#196,d0		; take a margin
 	bge.s	.nopalswap
 	move.l	#hbl,$120
 	addq.w	#1,d0
@@ -753,6 +754,7 @@ tmppos
 	dc.w	320*2
 
 hbl
+	move.w	#$2700,sr	; disable interrupts
 	move.l	#hbl199,$120
 	move.b 	#0,$fffffa1b.w 	;Timer B stop
 	move.b	hblcount2,$fffffa21.w 	; timer B data : Counter value
@@ -770,7 +772,9 @@ hbl
 	rte
 
 hbl199
+	move.w	#$2700,sr	; disable interrupts
 	movem.l	d0/a0-a1,-(sp)
+
 	if debug
 	move.w	#$00f,$ffff8240.w	; blue
 	endif
@@ -790,9 +794,10 @@ hbl199
 	or.l	d0,d0
 	or.l	d0,d0
 	else
-	rept 6
-	or.l	d0,d0
-	endr
+	moveq.l	#2,d0
+.loop1
+	nop
+	dbra	d0,.loop1
 	endif
 	eor.b	#2,$ffff820a.w		; 50Hz/60Hz switch
 	;set palettec (from color index 1 to 15, skip color 0)
