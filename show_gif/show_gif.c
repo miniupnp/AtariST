@@ -96,10 +96,10 @@ int main(int argc, char ** argv)
 
 	filename = "NGIFLIB\\SAMPLES\\borregas.gif";
 	filename = "NGIFLIB\\SAMPLES\\cirrhose.gif";
-	//filename = "amigagry.gif";
-	//filename = "nomercyi.gif";
-	//filename = "e7monsta.gif"
-	//filename = "NGIFLIB\\SAMPLES\\far_away.gif";
+	filename = "NGIFLIB\\SAMPLES\\amigagry.gif";
+	//filename = "NGIFLIB\\SAMPLES\\nomercyi.gif";
+	//filename = "NGIFLIB\\SAMPLES\\exo7-monsta32.gif"
+	filename = "NGIFLIB\\SAMPLES\\far_away.gif";
 
 	log = fopen("show_gif.log", "a");
 	memset(&gif, 0, sizeof(gif));
@@ -128,7 +128,7 @@ int main(int argc, char ** argv)
 		printf("OK\n");
 		(void)Cursconf(0, 0);	/* hide cursor */
 		img = gif->cur_img;
-		for(i = 0; i < 16; i++) {
+		for(i = 0; i < 16 && i < gif->ncolors; i++) {
 			palette[i] = to_ste_palette(img->palette[i].r,
 			                            img->palette[i].g,
 			                            img->palette[i].b);
@@ -138,9 +138,49 @@ int main(int argc, char ** argv)
 		c2p(Physbase(), (UBYTE *)gif->frbuff, gif->width, gif->height);
 		t1 = Supexec(get200hz);
 		fprintf(log, " c2p=%ldms", (t1 - t0)*5);
+		fprintf(log, " %dc", (int)gif->ncolors);
+		if(gif->ncolors > 16) {
+			unsigned long l;
+			unsigned int freq[256];
+			unsigned int used_colors;
+			UBYTE trans_tab[256];
+			UBYTE * p;
+
+			memset(freq, 0, sizeof(freq));
+			/* count frequency of pixel values */
+			for(p = (UBYTE *)gif->frbuff, l = (unsigned long)gif->width*gif->height; l > 0; l--, p++) {
+				freq[*p]++;
+			}
+			/* count # used colors */
+			for(used_colors = 0, i = 0; i < 256; i++) {
+				if(freq[i] != 0) used_colors++;
+				trans_tab[i] = (UBYTE)i;	/* and init trans_tab */
+			}
+			fprintf(log, " %uused", used_colors);
+			if(used_colors <= 16) {
+				UBYTE c = 0;
+				for(i = 0; i < 256; i++) {
+					if(freq[i] != 0) {
+						trans_tab[i] = c;
+						palette[c] = to_ste_palette(img->palette[i].r,
+						                            img->palette[i].g,
+						                            img->palette[i].b);
+						c++;
+					}
+				}
+				Setpalette(palette);
+				for(p = (UBYTE *)gif->frbuff, l = (unsigned long)gif->width*gif->height; l > 0; l--, p++) {
+					*p = trans_tab[*p];
+					p++;
+				}
+				c2p(Physbase(), (UBYTE *)gif->frbuff, gif->width, gif->height);
+			} else {
+				/* TODO : some color reduction ! */
+			}
+		}
 	}
 
-	//GifDestroy(&gif);
+	GifDestroy(gif);
 	fprintf(log, "\n");
 	fclose(log);
 	Crawcin();
