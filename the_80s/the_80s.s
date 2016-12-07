@@ -873,7 +873,7 @@ msgst
 msgste
 	dc.b	'STe',13,10,0
 msgmegaste
-	dc.b	'Mega STe. disabling cache',13,10,0
+	dc.b	'Mega STe.',13,10,0
 msgfalcon
 	dc.b	'Falcon 030',13,10,0
 msgtt
