@@ -5,7 +5,7 @@ Code  : Nanard
 GfX   : Jojo073
 Music : Karsten Obarski (YM2149F conversion by Estrayk)
 
-Should run on any Atari ST / STe / Mega STe
+Should run on any Atari ST / STe / Mega STe - 50Hz
 We have still bombs with some HD drivers...
 
 Press ESC to quit during the show, any other key to skip to the next picture.
@@ -35,6 +35,7 @@ TODO :
  run OK on 60HZ machines ?
  test with EMUTOS
  proper ASCII logo
+ own IKBD handler to fix things under TOS 1.00 and 1.02
 
 Programming notes :
 Contrary to most demoscene production code, I've tried to be as "OS friendly"
