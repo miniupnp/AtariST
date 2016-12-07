@@ -1,2 +1,3 @@
 FILE_ID.DIZ text eol=crlf
-*.TXT eol=crlf
+DESKTOP.INF text eol=crlf
+*.TXT text eol=crlf

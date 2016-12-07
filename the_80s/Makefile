@@ -22,11 +22,11 @@ zip:	the_80s.zip
 # zip options :
 # -j : junk path
 # -k : MSDOS compatible names and attributes
-the_80s.zip:	the_80s.tos FILE_ID.DIZ knight6.iff README.TXT
+the_80s.zip:	the_80s.tos FILE_ID.DIZ knight6.iff README.TXT DESKTOP.INF
 	$(RM) $@
 	zip -j -k $@ $^ pictures/*.iff
 
-the_80s.st:	the_80s.tos FILE_ID.DIZ knight6.iff README.TXT \
+the_80s.st:	the_80s.tos FILE_ID.DIZ knight6.iff README.TXT DESKTOP.INF \
 			../bootsector/detect.bin
 	$(RM) $@
 	hmsa $@ DS
