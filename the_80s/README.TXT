@@ -6,6 +6,7 @@ GfX   : Jojo073
 Music : Karsten Obarski (YM2149F conversion by Estrayk)
 
 Should run on any Atari ST / STe / Mega STe
+We have still bombs with some HD drivers...
 
 Press ESC to quit during the show, any other key to skip to the next picture.
 The color activity indicator at the bottom right of the screen is :
@@ -25,7 +26,7 @@ Coded using VASM and Hatari on a linux PC. UPX is used to pack PRG.
 This is an open source production :
 https://github.com/miniupnp/AtariST/tree/master/the_80s
 
-Tested on : Mega STe (TOS x es)
+Tested on : Mega STe (TOS 2.06 es)
             2080 STe (TOS 1.06 fr)
             1040 STf (TOS 1.00 fr)
             1040 STfm (TOS 1.04 de)
