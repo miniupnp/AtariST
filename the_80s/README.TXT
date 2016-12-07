@@ -7,6 +7,12 @@ Music : Karsten Obarski (YM2149F conversion by Estrayk)
 
 Should run on any Atari ST / STe / Mega STe
 
+Press ESC to quit during the show, any other key to skip to the next picture.
+The color activity indicator at the bottom right of the screen is :
+ - green :  ready
+ - orange : loading from disk
+ - blue :   decoding IFF picture
+
 A Party version has been released for the Cookie demoparty held in Paris
 December 3rd 2016 - http://cookie.paris/
 http://www.pouet.net/prod.php?which=68597
@@ -14,8 +20,7 @@ This Party version has glitches on STe machines.
 
 Music composed in maxYMiser.
 Pictures drawn using Deluxe Paint (on amiga ;) http://jojo073.blogspot.fr/
-Developped using VASM and Hatari on a linux PC.
-UPX is used to pack PRG.
+Coded using VASM and Hatari on a linux PC. UPX is used to pack PRG.
 
 This is an open source production :
 https://github.com/miniupnp/AtariST/tree/master/the_80s
