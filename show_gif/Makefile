@@ -5,7 +5,7 @@ CFLAGS += -sc
 CFLAGS += -speed
 CFLAGS += -maxoptpasses=20
 CFLAGS += -DNGIFLIB_INDEXED_ONLY
-CFLAGS += -cpp-comments
+#CFLAGS += -cpp-comments
 CFLAGS += -Ingiflib
 
 AS = vasmm68k_mot

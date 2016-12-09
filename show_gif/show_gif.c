@@ -97,8 +97,8 @@ int main(int argc, char ** argv)
 	filename = "NGIFLIB\\SAMPLES\\borregas.gif";
 	filename = "NGIFLIB\\SAMPLES\\cirrhose.gif";
 	filename = "NGIFLIB\\SAMPLES\\amigagry.gif";
-	//filename = "NGIFLIB\\SAMPLES\\nomercyi.gif";
-	//filename = "NGIFLIB\\SAMPLES\\exo7-monsta32.gif"
+	/*filename = "NGIFLIB\\SAMPLES\\nomercyi.gif";*/
+	/*filename = "NGIFLIB\\SAMPLES\\exo7-monsta32.gif"*/
 	filename = "NGIFLIB\\SAMPLES\\far_away.gif";
 
 	log = fopen("show_gif.log", "a");
