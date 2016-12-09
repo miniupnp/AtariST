@@ -110,7 +110,7 @@ int main(int argc, char ** argv)
 	}
 	gif = malloc(sizeof(struct ngiflib_gif));
 	memset(gif, 0, sizeof(struct ngiflib_gif));
-	gif->input = (void *)fgif;
+	gif->input.file = fgif;
 	gif->mode = NGIFLIB_MODE_FROM_FILE;
 	gif->mode |= NGIFLIB_MODE_INDEXED;
 
@@ -135,7 +135,7 @@ int main(int argc, char ** argv)
 		}
 		Setpalette(palette);
 		t0 = Supexec(get200hz);
-		c2p(Physbase(), (UBYTE *)gif->frbuff, gif->width, gif->height);
+		c2p(Physbase(), gif->frbuff.p8, gif->width, gif->height);
 		t1 = Supexec(get200hz);
 		fprintf(log, " c2p=%ldms", (t1 - t0)*5);
 		fprintf(log, " %dc", (int)gif->ncolors);
@@ -148,7 +148,7 @@ int main(int argc, char ** argv)
 
 			memset(freq, 0, sizeof(freq));
 			/* count frequency of pixel values */
-			for(p = (UBYTE *)gif->frbuff, l = (unsigned long)gif->width*gif->height; l > 0; l--, p++) {
+			for(p = gif->frbuff.p8, l = (unsigned long)gif->width*gif->height; l > 0; l--, p++) {
 				freq[*p]++;
 			}
 			/* count # used colors */
@@ -169,11 +169,11 @@ int main(int argc, char ** argv)
 					}
 				}
 				Setpalette(palette);
-				for(p = (UBYTE *)gif->frbuff, l = (unsigned long)gif->width*gif->height; l > 0; l--, p++) {
+				for(p = gif->frbuff.p8, l = (unsigned long)gif->width*gif->height; l > 0; l--, p++) {
 					*p = trans_tab[*p];
 					p++;
 				}
-				c2p(Physbase(), (UBYTE *)gif->frbuff, gif->width, gif->height);
+				c2p(Physbase(), gif->frbuff.p8, gif->width, gif->height);
 			} else {
 				/* TODO : some color reduction ! */
 			}
