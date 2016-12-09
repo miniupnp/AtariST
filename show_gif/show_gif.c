@@ -10,6 +10,18 @@ size_t __stack = 65536; /* 64KB stack-size */
 extern void c2p_line(UWORD * planar, UBYTE * chunky, int count);
 #endif
 
+#define ABS(i) my_abs(i)
+
+#define COLOR_DIFF(A,B) (  ABS(((int)((A).r) - (int)(B).r) & ~31) \
+                         + ABS(((int)((A).g) - (int)(B).g) & ~31) \
+                         + ABS(((int)((A).b) - (int)(B).b) & ~31) )
+
+static int my_abs(int i)
+{
+	if(i > 0) return i;
+	if(i == 0x8000) return 0x7fff;
+	return (-i);
+}
 
 void fprintf_ts(FILE *f, ULONG ts)
 {
@@ -98,8 +110,8 @@ int main(int argc, char ** argv)
 	filename = "NGIFLIB\\SAMPLES\\cirrhose.gif";
 	filename = "NGIFLIB\\SAMPLES\\amigagry.gif";
 	/*filename = "NGIFLIB\\SAMPLES\\nomercyi.gif";*/
-	/*filename = "NGIFLIB\\SAMPLES\\exo7-monsta32.gif"*/
-	filename = "NGIFLIB\\SAMPLES\\far_away.gif";
+	filename = "NGIFLIB\\SAMPLES\\exo7-monsta32.gif";
+	/*filename = "NGIFLIB\\SAMPLES\\far_away.gif";*/
 
 	log = fopen("show_gif.log", "a");
 	memset(&gif, 0, sizeof(gif));
@@ -142,21 +154,56 @@ int main(int argc, char ** argv)
 		if(gif->ncolors > 16) {
 			unsigned long l;
 			unsigned int freq[256];
+			unsigned int min_freq;
 			unsigned int used_colors;
 			UBYTE trans_tab[256];
 			UBYTE * p;
 
 			memset(freq, 0, sizeof(freq));
+			min_freq = 0xffff;
 			/* count frequency of pixel values */
 			for(p = gif->frbuff.p8, l = (unsigned long)gif->width*gif->height; l > 0; l--, p++) {
 				freq[*p]++;
 			}
 			/* count # used colors */
 			for(used_colors = 0, i = 0; i < 256; i++) {
-				if(freq[i] != 0) used_colors++;
+				if(freq[i] != 0) {
+					used_colors++;
+					if(freq[i] < min_freq) min_freq = freq[i];
+				}
 				trans_tab[i] = (UBYTE)i;	/* and init trans_tab */
+				/*if(freq[i] != 0) printf("%d %4d  #%02x%02x%02x\n", i, freq[i],
+				img->palette[i].r, img->palette[i].g, img->palette[i].b);*/
 			}
 			fprintf(log, " %uused", used_colors);
+			while(used_colors > 16) {
+				int to_kick = 0;
+				int close_color = 0;
+				int min_diff = 0x7fff;
+				while(to_kick < gif->ncolors && (freq[to_kick] == 0 || freq[to_kick] > min_freq))
+					to_kick++;
+				/*printf("min_freq=%d to_kick = %d\n", min_freq, to_kick);*/
+				for(i = 0; i < gif->ncolors; i++) {
+					int diff;
+					if(i == to_kick) continue;
+					if(freq[i] == 0) continue;
+					diff = COLOR_DIFF(img->palette[to_kick], img->palette[i]);
+					if(diff < min_diff) {
+						min_diff = diff;
+						close_color = i;
+					}
+				}
+				freq[close_color] += freq[to_kick];
+				freq[to_kick] = 0;
+				min_freq = 0xffff;
+				for(i = 0; i < gif->ncolors; i++) {
+					if(trans_tab[i] == to_kick) {
+						trans_tab[i] = close_color;
+					}
+					if(freq[i] != 0 && freq[i] < min_freq) min_freq = freq[i];
+				}
+				used_colors--;
+			}
 			if(used_colors <= 16) {
 				UBYTE c = 0;
 				for(i = 0; i < 256; i++) {
@@ -168,10 +215,14 @@ int main(int argc, char ** argv)
 						c++;
 					}
 				}
+				for(i = 0; i < 256; i++) {
+					if(freq[i] == 0 && trans_tab[i] != i) {
+						trans_tab[i] = trans_tab[trans_tab[i]];
+					}
+				}
 				Setpalette(palette);
 				for(p = gif->frbuff.p8, l = (unsigned long)gif->width*gif->height; l > 0; l--, p++) {
 					*p = trans_tab[*p];
-					p++;
 				}
 				c2p(Physbase(), gif->frbuff.p8, gif->width, gif->height);
 			} else {
