@@ -116,22 +116,28 @@ ready_led	equ	1
 	bra.s	.printdetected
 .plainst
 	pea	msgst
+	moveq	#0,d1
 	bra.s	.printdetected
 .ste
 	btst	#20,d0
 	bne.s	.megaste
 	pea	msgste
+	moveq	#1,d1
 	bra.s	.printdetected
 .tt
 	pea	msgtt
+	moveq	#3,d1
 	bra.s	.printdetected
 .falcon
 	pea	msgfalcon
+	moveq	#4,d1
 	bra.s	.printdetected
 .megaste
 	pea	msgmegaste
+	moveq	#2,d1
 
 .printdetected
+	move.b	d1,machinetype
 	move.w	#9,-(sp)	; Cconws
 	trap	#1		; GEMDOS
 
@@ -362,7 +368,7 @@ ready_led	equ	1
 	;addq.l	#6,sp			;
 	;move.l	d0,oldusp		; store old user stack pointer
 
-	supexec setvideobase
+	supexec setvideo
 
 	if	enable_music
 	supexec	MUSIC+0			; init music
@@ -673,7 +679,46 @@ cpypal
 	dbra	d0,.palcpyloop
 	rts
 
-setvideobase
+setvideo
+	cmp.b	#4,machinetype
+	bcs		.notfalcon
+	move.w	#$59,-(sp)	; VgetMonitor check monitortype (falcon)
+	trap	#14	; XBIOS
+	addq.l	#2,sp
+	cmp.w	#2,d0
+	beq.s	.isvga
+		* from 'Screen Pain'
+		* Monitor: RGB/TV
+		* 320*240, 16 Farben, 50.0 Hz, 15625 Hz
+		MOVE.L   #$3E0033,$FFFF8282.W
+        MOVE.L   #$A0003,$FFFF8286.W
+        MOVE.L   #$1C0036,$FFFF828A.W
+        MOVE.L   #$2710265,$FFFF82A2.W
+        MOVE.L   #$2F0057,$FFFF82A6.W
+        MOVE.L   #$237026B,$FFFF82AA.W
+        MOVE.W   #$200,$FFFF820A.W
+        MOVE.W   #$181,$FFFF82C0.W
+        CLR.W    $FFFF8266.W
+        MOVE.B   #$0,$FFFF8260.W
+        MOVE.W   #$0,$FFFF82C2.W
+        MOVE.W   #$50,$FFFF8210.W
+	bra.s	.notfalcon
+.isvga
+	* Monitor: VGA
+	* 320*240, 16 Farben, 60.0 Hz, 31470 Hz
+        MOVE.L   #$170011,$FFFF8282.W
+        MOVE.L   #$2020E,$FFFF8286.W
+        MOVE.L   #$D0012,$FFFF828A.W
+        MOVE.L   #$41903FF,$FFFF82A2.W
+        MOVE.L   #$3F003D,$FFFF82A6.W
+        MOVE.L   #$3FD0415,$FFFF82AA.W
+        MOVE.W   #$200,$FFFF820A.W
+        MOVE.W   #$186,$FFFF82C0.W
+        CLR.W    $FFFF8266.W
+        MOVE.B   #$0,$FFFF8260.W
+        MOVE.W   #$5,$FFFF82C2.W
+        MOVE.W   #$50,$FFFF8210.W
+.notfalcon
 	move.l	framep,d0
 	lsr.l	#8,d0
 	move.b	d0,$ffff8203.w	; Video base medium
@@ -804,6 +849,9 @@ hbl199
 	move.w	#$00f,$ffff8240.w	; blue
 	endif
 
+	cmp.b	#3,machinetype	; TT or Falcon ?
+	bcc.s	.skipborderopen
+
 	lea		$fffffa1b.w,a0
 	move.b 	#0,(a0)			; fffa1b Timer B stop
 	move.b	#200,6(a0)	 	; fffa21 Timer B data : Counter value
@@ -825,6 +873,8 @@ hbl199
 	dbra	d0,.loop1
 	endif
 	eor.b	#2,$ffff820a.w		; 50Hz/60Hz switch
+.skipborderopen
+
 	;set palettec (from color index 1 to 15, skip color 0)
 	lea		palettec+2,a0
 	lea		$ffff8242.w,a1
@@ -968,5 +1018,7 @@ hblcount2
 	ds.b	1
 conterm_backup
 	ds.b	1
+machinetype
+	ds.b	1	; 0 = ST, 1 = STe, 2 = Mega STe, 3 = TT030, 4 = Falcon
 framebuffer
 	ds.b	160*248
