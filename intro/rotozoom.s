@@ -5,6 +5,8 @@
 ; Y = zoom * (x*sin(a) + y*cos(a))
 
 debug	equ 0
+rotowidth	equ	64
+rotoheight	equ	48
 
 	; MACRO(S) DEFINITION(S)
 	macro supexec		; 1 argument : subroutine address
@@ -115,7 +117,7 @@ debug	equ 0
 	move.w	#191,d7
 .sincosloop2
 	move.l	(a0)+,d0
-	neg.l	d0
+	neg.l	d0			; sin(x) = -sin(x-pi)
 	move.l	d0,(a1)+
 	dbra	d7,.sincosloop2
 
@@ -160,17 +162,16 @@ mainloop
 
 	move.l	imagep,a0
 	move.l	physbase,a1
-	lea	64+68*160(a1),a1
+	lea	80-rotowidth/4+(100-rotoheight/2)*160(a1),a1	; to center
 
-	;moveq.l	#64-1,d0
-	moveq.l	#24-1,d0
+	moveq.l	#rotoheight-1,d0
 .loopy
 	move.w	d0,-(sp)
 
 	move.l	d4,-(sp)
 	move.l	d5,-(sp)
 
-	moveq.l	#4-1,d3
+	moveq.l	#rotowidth/16-1,d3
 .loopx
 	rept	16
 	move.l	d4,d6
@@ -202,7 +203,7 @@ mainloop
 	;add.l	a4,d5
 	add.l	a2,d5
 	move.w	(sp)+,d0
-	lea	128(a1),a1
+	lea	160-rotowidth/2(a1),a1
 	dbra	d0,.loopy
 
 	move.w	#11,-(sp)	; Cconis
