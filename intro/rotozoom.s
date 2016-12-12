@@ -4,6 +4,16 @@
 ; X = zoom * (x*cos(a) - y*sin(a))
 ; Y = zoom * (x*sin(a) + y*cos(a))
 
+debug	equ 0
+
+	; MACRO(S) DEFINITION(S)
+	macro supexec		; 1 argument : subroutine address
+	pea		\1(pc)
+	move	#38,-(sp)	; Supexec
+	trap	#14			; XBIOS
+	addq.l	#6,sp
+	endm
+
 	code
 
 	dc.w $a000 ; Line-A init
@@ -62,22 +72,120 @@
 	trap	#14			; XBIOS
 	addq.l	#6,sp
 
+	; calculate sin/cos table
+	lea	sin(pc),a0
+	lea	cos-sin(a0),a1
+	clr.l	(a0)+	; sin(0) = 0
+	move.l	#$00000648,d0		; d0=sin(pi/128) = 0.024541228
+	move.l	d0,d2				; d2=sin(x)
+	move.l	d0,(a0)+
+	move.l	#$00010000,(a1)+	; cos(0) = 1
+	move.l	#$0000ffec,d1		; d1=cos(pi/128) = 0.999698818
+	move.l	d1,d3				; d3=cos(x)
+	move.l	d1,(a1)+
+	move.w	#61,d7
+.sincosloop
+	; sin(x+pi/128) = sin(x)*cos(pi/128)+cos(x)*sin(pi/128)
+	; cos(x+pi/128) = cos(x)*cos(pi/128)-sin(x)*sin(pi/128)
+	move.w	d2,d4
+	mulu.w	d1,d4	; d4 = sin(x)*cos(pi/128)
+	clr.w	d4
+	swap	d4
+	move.w	d3,d5
+	mulu.w	d0,d5	; d5 = cos(x)*sin(pi/128)
+	clr.w	d5
+	swap	d5
+	add.l	d5,d4	; d4 = sin(x+pi/128)
+	move.l	d4,(a0)+
+	move.w	d3,d5
+	mulu.w	d1,d5	; d5 = cos(x)*cos(pi/128)
+	clr.w	d5
+	swap	d5
+	move.w	d2,d6
+	mulu.w	d0,d6	; d6 = sin(x)*sin(pi/128)
+	clr.w	d6
+	swap	d6
+	sub.l	d6,d5	; d5 = cos(x+pi/128)
+	move.l	d5,(a1)+
+	move.l	d4,d2	; new sin(x)
+	move.l	d5,d3	; new cos(x)
+	dbra	d7,.sincosloop
 
+	lea	sin(pc),a0
+	move.w	#191,d7
+.sincosloop2
+	move.l	(a0)+,d0
+	neg.l	d0
+	move.l	d0,(a1)+
+	dbra	d7,.sincosloop2
+
+	moveq	#0,d1	; angle
 mainloop
+	addq.w	#8,d1
+	and.w	#$3fc,d1
+	move.w	d1,-(sp)
+
+	if debug
+	supexec setborderok
+	endif
+
 	move.w	#37,-(sp)	; Vsync
 	trap	#14			; XBIOS
 	addq.l	#2,sp
 
+	if debug
+	supexec setborderred
+	endif
+
 	; chunky to planar Test
+	;move.l	#$0000b505,a4	; dX
+	;move.l	#$0000b505,a5	; dY
+	lea	cos(pc),a0
+	move.w	(sp),d0	; angle
+	move.l	(a0,d0.w),a4	; a4 = dX = cos(angle)
+	;lea	sin-cos(a0),a0
+	sub.w	#256,d0
+	move.l	(a0,d0.w),a5	; a5 = dY = sin(angle)
+
+	moveq	#10,d0
+	move.l	a4,d1
+	asr.l	d0,d1
+	move.l	d1,a2		; a2 = dX >> 10
+	move.l	a5,d1
+	asr.l	d0,d1
+	move.l	d1,a3		; a3 = dY >> 10
+
+	moveq.l	#0,d4	; X
+	moveq.l	#0,d5	; Y
+
 	move.l	imagep,a0
 	move.l	physbase,a1
+	lea	64+68*160(a1),a1
 
-	moveq.l	#64-1,d6
+	;moveq.l	#64-1,d0
+	moveq.l	#24-1,d0
 .loopy
-	moveq.l	#4-1,d7
+	move.w	d0,-(sp)
+
+	move.l	d4,-(sp)
+	move.l	d5,-(sp)
+
+	moveq.l	#4-1,d3
 .loopx
 	rept	16
-	move.b	(a0)+,d2
+	move.l	d4,d6
+	swap	d6
+	and.w	#$003f,d6
+	;move.l	d5,d7
+	;swap	d7
+	;lsl.w	#6,d7
+	move.w	d5,d7
+	and.w	#$0fc0,d7
+	or.w	d7,d6
+	add.l	a4,d4
+	;add.l	a5,d5
+	add.l	a3,d5
+	move.b	(a0,d6.w),d2
 	lsr.w	#1,d2	;roxr.w	#1,d2
 	addx.w	d0,d0	; bit plane 0
 	lsr.w	#1,d2	;roxr.w	#1,d2
@@ -86,14 +194,22 @@ mainloop
 	move.w	d0,(a1)+
 	move.w	d1,(a1)+
 	addq.l	#4,a1	; skip bitplanes 2 & 3
-	dbra	d7,.loopx
+	dbra	d3,.loopx
 
+	move.l	(sp)+,d5
+	move.l	(sp)+,d4
+	sub.l	a5,d4
+	;add.l	a4,d5
+	add.l	a2,d5
+	move.w	(sp)+,d0
 	lea	128(a1),a1
-	dbra	d6,.loopy
+	dbra	d0,.loopy
 
 	move.w	#11,-(sp)	; Cconis
 	trap	#1			; GEMDOS
 	addq.l	#2,sp
+
+	move.w	(sp)+,d1	; angle
 	tst.w	d0
 	beq		mainloop
 
@@ -103,6 +219,18 @@ mainloop
 
 	clr -(sp)
 	trap #1		; Pterm0
+
+	; -------------------
+	if debug
+setborderred
+	move.w	#$0400,$ffff8240.w
+	rts
+
+setborderok
+	lea	palette(pc),a0
+	move.w	(a0),$ffff8240.w
+	rts
+	endif ; debug
 
 	; *** DATA ***
 	data
@@ -140,3 +268,7 @@ imagep
 	ds.l	1
 palette
 	ds.w	16
+sin
+	ds.l	64
+cos
+	ds.l	256
