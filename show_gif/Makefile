@@ -5,6 +5,7 @@ CFLAGS += -sc
 CFLAGS += -speed
 CFLAGS += -maxoptpasses=20
 CFLAGS += -DNGIFLIB_INDEXED_ONLY
+CFLAGS += -DNGIFLIB_ENABLE_CALLBACKS
 #CFLAGS += -cpp-comments
 CFLAGS += -Ingiflib
 

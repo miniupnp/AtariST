@@ -95,6 +95,32 @@ void c2p(UWORD * planar, UBYTE * chunky, int width, int height)
 	}
 }
 
+#ifdef NGIFLIB_ENABLE_CALLBACKS
+static void set_palette(struct ngiflib_gif * gif, struct ngiflib_rgb * pal, int ncolors)
+{
+	int i;
+	static u16 palette[16];
+
+	printf("set_palette(.. %d)\n", ncolors);
+	for(i = 0; i < 16 && i < ncolors; i++) {
+		/*printf("%2d: %02x %02x %02x\n", i, (int)pal[i].r, (int)pal[i].g, (int)pal[i].b);*/
+		palette[i] = to_ste_palette(pal[i].r,
+		                            pal[i].g,
+		                            pal[i].b);
+	}
+	Setpalette(palette);
+}
+
+static void draw_line(struct ngiflib_gif * gif, union ngiflib_pixpointer line, int Y)
+{
+	WORD * dest;
+	if(Y < 200) {
+		dest = (WORD *)Physbase() + Y * 80;
+		c2p_line(dest, line.p8, (gif->width + 15) >> 4);
+	}
+}
+#endif /* NGIFLIB_ENABLE_CALLBACKS */
+
 int main(int argc, char ** argv)
 {
 	int r, i;
@@ -108,10 +134,11 @@ int main(int argc, char ** argv)
 
 	filename = "NGIFLIB\\SAMPLES\\borregas.gif";
 	filename = "NGIFLIB\\SAMPLES\\cirrhose.gif";
-	filename = "NGIFLIB\\SAMPLES\\amigagry.gif";
+	/*filename = "NGIFLIB\\SAMPLES\\amigagry.gif";*/
 	/*filename = "NGIFLIB\\SAMPLES\\nomercyi.gif";*/
-	filename = "NGIFLIB\\SAMPLES\\exo7-monsta32.gif";
+	/*filename = "NGIFLIB\\SAMPLES\\exo7-monsta32.gif";*/
 	/*filename = "NGIFLIB\\SAMPLES\\far_away.gif";*/
+	/*filename = "NGIFLIB\\SAMPLES\\mr_boomi.gif";*/
 
 	log = fopen("show_gif.log", "a");
 	memset(&gif, 0, sizeof(gif));
@@ -126,6 +153,12 @@ int main(int argc, char ** argv)
 	gif->mode = NGIFLIB_MODE_FROM_FILE;
 	gif->mode |= NGIFLIB_MODE_INDEXED;
 
+#ifdef NGIFLIB_ENABLE_CALLBACKS
+	gif->palette_cb = set_palette;
+	gif->line_cb = draw_line;
+#endif
+
+	(void)Cursconf(0, 0);	/* hide cursor */
 	ts = Gettime();
 	fprintf_ts(log, ts);
 	fprintf(log, " %s ", filename);
@@ -136,20 +169,22 @@ int main(int argc, char ** argv)
 		fprintf(log, "failure");
 	} else if(r == 1) {
 		u16 palette[16];
+
 		fprintf(log, "time=%ldms", (t1 - t0)*5);
-		printf("OK\n");
-		(void)Cursconf(0, 0);	/* hide cursor */
 		img = gif->cur_img;
+#ifndef NGIFLIB_ENABLE_CALLBACKS
 		for(i = 0; i < 16 && i < gif->ncolors; i++) {
 			palette[i] = to_ste_palette(img->palette[i].r,
 			                            img->palette[i].g,
 			                            img->palette[i].b);
 		}
 		Setpalette(palette);
+		/*for(i = 0; i < 16; i++) gif->frbuff.p8[i] = i;*/
 		t0 = Supexec(get200hz);
 		c2p(Physbase(), gif->frbuff.p8, gif->width, gif->height);
 		t1 = Supexec(get200hz);
 		fprintf(log, " c2p=%ldms", (t1 - t0)*5);
+#endif /* NGIFLIB_ENABLE_CALLBACKS */
 		fprintf(log, " %dc", (int)gif->ncolors);
 		if(gif->ncolors > 16) {
 			unsigned long l;
