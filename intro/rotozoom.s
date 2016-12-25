@@ -5,8 +5,9 @@
 ; Y = zoom * (x*sin(a) + y*cos(a))
 
 debug	equ 0
-rotowidth	equ	64
-rotoheight	equ	48
+; width should be a multiple of 32
+rotowidth	equ	96
+rotoheight	equ	96
 
 	; MACRO(S) DEFINITION(S)
 	macro supexec		; 1 argument : subroutine address
@@ -121,9 +122,9 @@ rotoheight	equ	48
 	move.l	d0,(a1)+
 	dbra	d7,.sincosloop2
 
-	moveq	#0,d1	; angle
+	moveq	#0,d1	; angle * 4 (to use as index in LONG array)
 mainloop
-	addq.w	#8,d1
+	addq.w	#4,d1	;
 	and.w	#$3fc,d1
 	move.w	d1,-(sp)
 
@@ -144,21 +145,21 @@ mainloop
 	;move.l	#$0000b505,a5	; dY
 	lea	cos(pc),a0
 	move.w	(sp),d0	; angle
-	move.l	(a0,d0.w),a4	; a4 = dX = cos(angle)
+	move.l	(a0,d0.w),a4	; a4 = dX = cos(angle)  16.16 fixed point
 	;lea	sin-cos(a0),a0
 	sub.w	#256,d0
-	move.l	(a0,d0.w),a5	; a5 = dY = sin(angle)
+	move.l	(a0,d0.w),a5	; a5 = dY = sin(angle)  16.16 fixed point
 
 	moveq	#10,d0
 	move.l	a4,d1
 	asr.l	d0,d1
-	move.l	d1,a2		; a2 = dX >> 10
+	move.l	d1,a2		; a2 = dX >> 10  : 26.6 fixed point
 	move.l	a5,d1
 	asr.l	d0,d1
-	move.l	d1,a3		; a3 = dY >> 10
+	move.l	d1,a3		; a3 = dY >> 10  : 26.6 fixed point
 
-	moveq.l	#0,d4	; X
-	moveq.l	#0,d5	; Y
+	moveq.l	#0,d4	; X  16.16 fixed point
+	moveq.l	#0,d5	; Y  26.6 fixed point
 
 	move.l	imagep,a0
 	move.l	physbase,a1
@@ -166,10 +167,10 @@ mainloop
 
 	moveq.l	#rotoheight-1,d0
 .loopy
-	move.w	d0,-(sp)
+	move.w	d0,-(sp)	; Push line count
 
-	move.l	d4,-(sp)
-	move.l	d5,-(sp)
+	move.l	d4,-(sp)	; save X
+	move.l	d5,-(sp)	; save Y
 
 	moveq.l	#rotowidth/16-1,d3
 .loopx
@@ -177,14 +178,10 @@ mainloop
 	move.l	d4,d6
 	swap	d6
 	and.w	#$003f,d6
-	;move.l	d5,d7
-	;swap	d7
-	;lsl.w	#6,d7
 	move.w	d5,d7
 	and.w	#$0fc0,d7
 	or.w	d7,d6
 	add.l	a4,d4
-	;add.l	a5,d5
 	add.l	a3,d5
 	move.b	(a0,d6.w),d2
 	lsr.w	#1,d2	;roxr.w	#1,d2
@@ -202,7 +199,7 @@ mainloop
 	sub.l	a5,d4
 	;add.l	a4,d5
 	add.l	a2,d5
-	move.w	(sp)+,d0
+	move.w	(sp)+,d0		; Pop line count
 	lea	160-rotowidth/2(a1),a1
 	dbra	d0,.loopy
 
