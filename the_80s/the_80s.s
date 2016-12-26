@@ -1,3 +1,4 @@
+; vim: tabstop=4 shiftwidth=4 noexpandtab
 ; Atari ST Slide Show "The Eighties"
 ;
 ; code:  nanard    https://github.com/miniupnp/AtariST/the_80s
@@ -833,10 +834,9 @@ hbl
 	movem.l	d0/a0-a1,-(sp)
 	lea		paletteb,a0
 	lea		$ffff8240.w,a1
-	move.w	#15,d0
-.loop
-	move.w	(a0)+,(a1)+
-	dbra	d0,.loop
+	rept 8
+	move.l	(a0)+,(a1)+
+	endr
 	movem.l	(sp)+,d0/a0-a1
 	bclr 	#0,$fffffa0f.w 	; acknowledge interrupt
 	rte
