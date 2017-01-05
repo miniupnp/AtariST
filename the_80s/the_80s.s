@@ -69,12 +69,37 @@ ready_led	equ	1
 	trap      #14          ; XBIOS
 	move.l	d0,logbase
 
-	clr.w    (sp)    ; resolution (0=ST low, 1=ST Mid)
+	moveq.l	#0,d0
+	cmp.b	#4,machinetype
+	bcs		.notfalcon
+	move.w	#-1,(sp)
+	move.w	#88,-(sp)	; Vsetmode() falcon
+	trap	#14			; XBIOS
+	addq.l	#2,sp
+	andi.w	#$0030,d0	; keep VGA and PAL/NTCS bits
+	ori.w	#$0182,d0	; VERTICAL | ST_COMPAT | 16color
+	move.w	d0,(sp)
+	move.w	#88,-(sp)
+	trap	#14			; XBIOS
+	lea	paletteb,a0
+	move.l	a0,(sp)
+	move.l	#$00ffffff,(a0)+	;	white
+	move.l	#$00ff0000,(a0)+	;	red
+	move.l	#$0000ff00,(a0)+	;	green
+	move.w	#4,-(sp)	; count
+	clr.w	-(sp)		; index
+	move.w	#93,-(sp)	; VsetRGB (falcon)
+	trap	#14			; XBIOS
+	lea		10(sp),sp
+	bra.s	.finished
+	;move.w	#3,d0
+.notfalcon
+	move.w    d0,-(sp)    ; resolution (0=ST low, 1=ST Mid)
 	move.l    physbase,-(sp)
 	move.l    logbase,-(sp)
 	move.w    #5,-(sp)     ; SetScreen
 	trap      #14          ; XBIOS
-	lea       12(sp),sp	; correct stack
+	lea       14(sp),sp	; correct stack
 
 	lea	paletteb,a0
 	move.l	a0,-(sp)
@@ -84,6 +109,7 @@ ready_led	equ	1
 	move.w	#6,-(sp)	; Setpalette
 	trap	#14			; XBIOS
 	addq.l	#6,sp
+.finished
 
 	; VT52 part
 
@@ -654,6 +680,8 @@ mybuserror
 	; $06   1 0 0 0 | VECTOR OFFSET ($8xxx)
 	; $08   SPECIAL STATUS WORD
 	; ...
+	cmp.w	#$7008,6(sp)
+	beq.s	.is68040accesserrorframe
 	cmp.w	#$8008,6(sp)
 	beq.s	.is68010frame
 	cmp.w	#$A008,6(sp)
@@ -665,9 +693,10 @@ mybuserror
 .is68010frame
 	clr.w	8(sp)
 	rte
+.is68040accesserrorframe
 .is68020shortframe
 .is68020longframe
-	clr.w	$a(sp)
+	add.l	#4,2(sp)	; skip clr.w instruction
 	rte
 
 backuppalette
@@ -703,6 +732,7 @@ setvideo
         MOVE.B   #$0,$FFFF8260.W
         MOVE.W   #$0,$FFFF82C2.W
         MOVE.W   #$50,$FFFF8210.W
+	if 0
 	bra.s	.notfalcon
 .isvga
 	* Monitor: VGA
@@ -719,6 +749,7 @@ setvideo
         MOVE.B   #$0,$FFFF8260.W
         MOVE.W   #$5,$FFFF82C2.W
         MOVE.W   #$50,$FFFF8210.W
+	endif
 .notfalcon
 	move.l	framep,d0
 	lsr.l	#8,d0
