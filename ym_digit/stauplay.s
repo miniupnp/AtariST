@@ -2,16 +2,22 @@
 ; (c) 2016 nanard
 ; https://github.com/miniupnp/AtariST
 ; TODO : really support YM or DMA sound playback.
+
+;added faster YM dac - tIn/newline
+
+YM_USE_AUTOINTERRUPT	EQU 0  	;0=no auto interrupt, 1=use auto interrupt
+
 buffersize equ 65536
 
 	; MACRO(S) DEFINITION(S)
 	macro supexec		; 1 argument : subroutine address
+	movem.l d0-a6,-(sp)
 	pea		\1(pc)
 	move	#38,-(sp)	; Supexec
 	trap	#14			; XBIOS
 	addq.l	#6,sp
+	movem.l (sp)+,d0-a6
 	endm
-
 	; CODE ENTRY POINT
 	code
 
@@ -35,19 +41,25 @@ buffersize equ 65536
 
 	clr.w	useymsound
 ymsound:
+	move.l 	#buffer,d0
+	clr.w 	d0
+	move.l 	D0,pbuffer
 
 	;supexec		readvec
 	;bsr		printlhex
 
-	;lea filename(pc),a0
 	move	#47,-(sp)	; Fgetdta
 	trap	#1
 	addq.l	#2,sp
 	move.l	d0,a0		; dta / command line
 	moveq	#0,d0
 	move.b	(a0)+,d0	; command line length
+	beq.s 	.default
 	clr.b	(a0,d0.w)	; zero byte at end of command line
-
+	bra.s 	.load
+.default:
+	lea filename(pc),a0
+.load:
 	bsr openfile	; and show info
 	tst.l	d6
 	bmi	end
@@ -69,16 +81,16 @@ ymsound:
 
 	; initial load
 	;move.l bufferp(pc),-(sp)	; address
-	pea	buffer(pc)
-	pea buffersize*2 ; len
+	move.l 	pbuffer,-(sp)
+	pea 	buffersize*2 ; len
 	move	d6,-(sp) ; handle
 	move	#63,-(sp) ; Fread
 	trap	#1
-	lea 12(sp),sp
-	
-	bsr printlhex
-	lea crlf(pc),a0
-	jsr (a5)	; _cconws
+	lea 	12(sp),sp
+
+	bsr 	printlhex
+	lea 	crlf(pc),a0
+	jsr 	(a5)	; _cconws
 
 	tst.w	useymsound
 	bne		setupym
@@ -87,16 +99,16 @@ ymsound:
 	; when DMA sound buffer is complete,
 	; INT #15 (Mono monitor / DMA Sound) is executed first,
 	; then INT #0 (Timer A)
-	pea       dmasoundcomplete	; vector
-	move.w    #15,-(sp)		; Mono monitor detect / DMA sound complete
-	move.w    #13,-(sp)		; Mfpint
-	trap      #14			; Call XBIOS
-	addq.l    #8,sp
+	pea 	dmasoundcomplete	; vector
+	move.w  #15,-(sp)		; Mono monitor detect / DMA sound complete
+	move.w  #13,-(sp)		; Mfpint
+	trap 	#14			; Call XBIOS
+	addq.l  #8,sp
 
 	move.w	#15,-(sp)	; Mono monitor detect / DMA sound complete
-	move.w    #27,-(sp)		; Jenabint
-	trap      #14			; Call XBIOS
-	addq.l    #4,sp
+	move.w 	#27,-(sp)		; Jenabint
+	trap 	#14			; Call XBIOS
+	addq.l  #4,sp
 
 	pea		dmasoundtimera	; vector
 	move.w	#1,-(sp)		; = count
@@ -115,7 +127,19 @@ ymsound:
 	bra		startplaying
 
 setupym:
+	move.l 	pbuffer,ymplaypointer
+
+;	lea 	replay_ym_tos_slow,a0
+	lea 	replay_ym_tos_fast,a0
+
+	;get replay entries (init,deinit,timer)
+	move.l 	(a0)+,a1
+	jsr 	(a1) 		;ym replay init - initialize _before_ reading the other pointers!
+	movem.l (a0),a2-a3
+	movem.l a1-a3,preplay_current
+
 	supexec	yminit
+
 	; MFP clock 2457600Hz
 	; Interrupt frequency = 2457600 / divider / data
 	; data * divider = 2457600 / frequency
@@ -124,10 +148,10 @@ setupym:
 	;     %100 => 50, %101 => 64, %110 => 100, %111 => 200
 
 	move.l	#2457600/4,d0
-	move.l	samplerate(pc),d1
+	move.l	samplerate,d1
 	divu.w	d1,d0
 
-	pea		ymtimera	; vector
+	move.l 	preplay_current_timer,-(sp) ; vector
 	move.w	d0,-(sp)	; data = count
 	move.w	#%0001,-(sp)	;Delay mode, divide by 4
 	move.w	#0,-(sp)	; Timer A
@@ -135,7 +159,7 @@ setupym:
 	trap    #14			; Call XBIOS
 	lea		12(sp),sp
 
-	lea		buffer0(pc),a0
+	lea		buffer0,a0
 	move.l	#buffersize,d0
 	add.l	a0,d0
 	move.l	a0,ymbuffcurrent
@@ -172,7 +196,7 @@ mainloop:
 	;move.l	(sp)+,d0
 
 	; call functions we are asked
-	move.l	functiontocall(pc),d0
+	move.l	functiontocall,d0
 	beq.s	mainloop
 	clr.l	functiontocall
 	move.l	d0,a0
@@ -180,7 +204,10 @@ mainloop:
 	bra.s	mainloop
 
 stop:
+	tst.b 	useymsound
+	bne.s 	.skipdma
 	supexec	stopdmasound
+.skipdma:
 
 	lea	stoppedmsg(pc),a0
 	jsr	(a5)	; _cconws
@@ -209,6 +236,8 @@ end:
 	addq.l    #8,sp
 
 	supexec	ymstop
+	move.l 	preplay_current_deinit,A0
+	jsr 	(A0)
 
 	bsr.s	presskey
 	clr -(sp)
@@ -241,7 +270,7 @@ readerr:
 	addq.l	#4,sp
 	move.l	#-1,d6	; return error
 	rts
-	
+
 openfile:
 	move.l	a0,-(sp)
 	lea msg2(pc),a0
@@ -261,7 +290,7 @@ openfile:
 	move	d0,d6
 	bmi.s	openerr
 
-	pea	auheader(pc)	; address
+	pea	auheader	; address
 	pea 24.w		; len
 	move	d6,-(sp) ; handle
 	move	#63,-(sp) ; Fread
@@ -271,37 +300,37 @@ openfile:
 	cmpi.w	#24,d0
 	bne.s	readerr
 
-	lea msgmagic(pc),a0
+	lea msgmagic,a0
 	bsr.s _cconws
-	lea magic(pc),a0
+	lea magic,a0
 	bsr.s _cconws
-	lea msgheadersize(pc),a0
-	bsr.s _cconws
-	move.l headersize(pc),d0
-	bsr printwdec
-	lea msgencoding(pc),a0
-	bsr _cconws	
-	move.l encoding(pc),d0
-	bsr printwdec
-	lea msgsamplerate(pc),a0
+	lea msgheadersize,a0
 	bsr _cconws
-	move.l samplerate(pc),d0
+	move.l headersize,d0
 	bsr printwdec
-	lea msgnchannels(pc),a0
+	lea msgencoding,a0
+	bsr _cconws
+	move.l encoding,d0
+	bsr printwdec
+	lea msgsamplerate,a0
+	bsr _cconws
+	move.l samplerate,d0
+	bsr printwdec
+	lea msgnchannels,a0
 	jsr (a5) ;bsr.s _cconws
-	move.l nchannel(pc),d0
+	move.l nchannel,d0
 	bsr printwdec
 
-	move.l	datasize(pc),d4
+	move.l	datasize,d4
 	bmi	.nolength
 	lea playtime(pc),a0
 	jsr (a5) ;bsr.s _cconws
-	move.l nchannel(pc),d0
+	move.l nchannel,d0
 	cmpi.l #1,d0
 	beq .ismono
 	lsr.l #1,d4
 .ismono:
-	move.l	samplerate(pc),d0
+	move.l	samplerate,d0
 	divu.w	d0,d4
 	moveq.l #0,d1
 	move.w	d4,d1	; quotient = total seconds
@@ -318,7 +347,7 @@ openfile:
 	trap #1 		; Cconout
 	addq.l #4,sp
 	swap	d4		; samples reminder
-	move.l	samplerate(pc),d1
+	move.l	samplerate,d1
 	;mulu.w	#100,d4		; to get 1/100th seconds
 	mulu.w	#1000,d4	; to get milliseconds
 	divu.w	d1,d4
@@ -329,17 +358,17 @@ openfile:
 	lea crlf(pc),a0
 	jsr (a5) ;bsr.s _cconws
 
-	move.l	encoding(pc),d0
+	move.l	encoding,d0
 	lea		encodingerrmsg,a0
 	cmpi.l	#2,d0
-	bne		readerr	
+	bne		readerr
 
-	move.l headersize(pc),d0
+	move.l headersize,d0
 	subi.l #24,d0
 	;bcs noinfo	; branch on carry set
 	bls noinfo	; branch on lower than or same
 
-	pea info(pc)
+	pea info
 	move.l d0,-(sp)	; len
 	move.w d6,-(sp) ; handle
 	move.w #63,-(sp) ; Fread
@@ -350,7 +379,7 @@ openfile:
 	;lea crlf(pc),a0
 	;jsr (a5) ;bsr.s _cconws
 
-	lea info(pc),a0
+	lea info,a0
 printinfoloop:
 	move.l a0,a1
 lbl1:
@@ -463,7 +492,7 @@ setdmabuffer:	; set buffer  d1 = buffer address
 	move.l	(sp)+,d1	; pop buffer address
 	add.l	d0,d1
 	lea		12(a0),a0	;$FFFF890E.w,a0	; end address
-	
+
 setdmaaddrsub:	; set start/end address (d1) to a0 register
 	swap	d1
 	move.b	d1,1(a0)	; hi byte
@@ -481,7 +510,7 @@ setdma:
 	bsr.s	setbuffer0
 	clr.w	currentbuffer
 
-	move.l	samplerate(pc),d1
+	move.l	samplerate,d1
 	move.l	#4096,d2	; rate <  8192 => play at  6258HZ (d0=0)
 	move.b	#-1,d0		; rate < 16384 => play at 12517HZ (d0=1)
 ratechooseloop:			; rate < 32768 => play at 25033HZ (d0=2)
@@ -489,7 +518,7 @@ ratechooseloop:			; rate < 32768 => play at 25033HZ (d0=2)
 	add.l	d2,d2
 	cmp.l	d1,d2
 	blt.s	ratechooseloop
-	move.l	nchannel(pc),d1
+	move.l	nchannel,d1
 	cmpi.b	#2,d1
 	beq.s mono
 	ori.b	#$80,d0		; set stereo bit
@@ -581,72 +610,39 @@ yminit:
 	move.b	$ffff8800.w,d0
 	ori.b	#%00111111,d0
 	move.b	d0,$ffff8802.w
+
+	move.l  $114.w,save114 		;save 200 Hz timer
+	move.l 	#emptyirq,$114.w 	;empty 200Hz timer
+	IFNE YM_USE_AUTOINTERRUPT
+	bclr 	#3,$ffFFFA17.w 		;enable autointerrupt
+	ENDC
 	rts
+
+emptyirq:
+	rte
 
 	; back to silence
 ymstop:
-	move.b	#7,$ffff8800
-	move.b	#%11111000,$ffff8802
-	move.b	#$8,$ffff8800
-	move.b	#0,$ffff8802
-	move.b	#$9,$ffff8800
-	move.b	#0,$ffff8802
-	move.b	#$a,$ffff8800
-	move.b	#0,$ffff8802
+	move.l 	#$0700F800,$ffff8800.w
+	move.l 	#$08000000,$ffff8800.w
+	move.l 	#$09000000,$ffff8800.w
+	move.l 	#$0A000000,$ffff8800.w
+
+	move.l 	save114,$114.w 	;restore 200Hz timer
+	IFNE YM_USE_AUTOINTERRUPT
+	bset 	#3,$ffFFFA17.w 		;disable autointerrupt
+	ENDC
 	rts
-	
 
-	; YM Digit Sound interrupt routine
-	; to be highly optimized :(
-ymtimera:
-	move.w	#$0F0B,$FFFF8240	; RED / purple
-	movem.l	d0/a0-a1,-(sp)
-	move.l	ymbuffcurrent,a0
-	move.b	(a0)+,d0
-	;lea		1(a0),a0	; XXX skip 1 sample (stereo => mono :)
-	cmp.l	ymbuffend,a0
-	bge		.nextbuffer
-	move.l	a0,ymbuffcurrent
-.back:
-	lsl.w	#3,d0
-	andi.l	#$07ff,d0
-	lea		ymvolumetable,a0
-	add.l	d0,a0
-	lea		$ffff8800.w,a1
-	move.w	(a0)+,d0
-	movep.w	d0,0(a1)
-	move.w	(a0)+,d0
-	movep.w	d0,0(a1)
-	move.w	(a0)+,d0
-	movep.w	d0,0(a1)
-	bclr    #5,$FFFFFA0F.w      ; Interrupt In-service A - Timer A done
-	movem.l	(sp)+,d0/a0-a1
-	move.w	#$0FFF,$FFFF8240	; White
-	rte
-
-.nextbuffer:
-	move.l	ymbuffnext,ymbuffcurrent
-	move.l	ymbuffnextend,ymbuffend
-	tst.w	currentbuffer
-	bne		.buffer1
-.buffer0
-	bsr		setbuffer0
-	move.w	#1,currentbuffer
-	lea		loadbuffer0,a0		; cannot call GEMDOS from Interrupt vector
-								; so delegate to main loop
-	bra		.finished
-.buffer1
-
-	bsr		setbuffer1
-	clr.w	currentbuffer
-	lea		loadbuffer1,a0
-.finished
-	move.l	a0,functiontocall
-	bra .back
-
+replay_ym_tos_slow:
+	include 	"replays/ym_tos_slow.s"
+replay_ym_tos_fast:
+	include 	"replays/ym_tos_fast.s"
 
 	; ---- data section
 	data
+filename:
+	dc.b 	"omr.au",0
 ;test_color:
 ;	dc.w	$00F0
 hexdigits:
@@ -685,15 +681,28 @@ printbuffer:
 	dc.b	"00000000"
 printbufferend:
 	dc.b	0
+	even
 
+ymplaypointer:
+	ds.l 	1
 ymvolumetable:
 	include	ymtable.s
 
 	bss
+	even
+preplay_current:
+preplay_current_init:
+	ds.l 	1
+preplay_current_deinit:
+	ds.l 	1
+preplay_current_timer:
+	ds.l 	1
 ;bufferp:
 ;	ds.l	1
 useymsound:
 	ds.w	1
+save114:
+	ds.l 	1
 ymbuffcurrent:
 	ds.l	1
 ymbuffend:
@@ -723,6 +732,10 @@ nchannel:
 info:
 	ds.b	2048
 
+pbuffer:
+	ds.l 	1
+
+	ds.b 	$10000 		;space for buffer alignment
 buffer:
 buffer0:
 	ds.b	buffersize
