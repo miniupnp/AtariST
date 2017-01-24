@@ -14,6 +14,11 @@
 #include <math.h>
 #include <errno.h>
 
+/* Taken from Hatari - Paulo Simoes' YM output measurements */
+/* Table of unsigned 4 bit D/A output level for 3 channels as measured on a real ST */
+static unsigned int volumetable_original[16][16][16] =
+#include "ym2149_fixed_vol.h"
+
 static double
 generate_levels(int bits, int a1, int b1, int c1,
                 int silent, int signed_pcm, unsigned char * results)
@@ -104,40 +109,17 @@ write_values(int bits, const unsigned char * values, const char * filename)
 	return 0;
 }
 
-int main(int argc, char * * argv)
-{
-	int bits = 8;
-	int signed_pcm = 1;
+int bits = 8;
+int signed_pcm = 1;
+const char * filename = NULL;
+
+static int
+calc(){
 	int a, b, c;
 	int besta, bestb, bestc;
 	double err;
 	double besterr = 1000000000000.0;
 	unsigned char * values;
-	const char * filename = NULL;
-	int i;
-
-	for(i = 1; i < argc; i++) {
-		if(strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
-			printf("Usage : %s [options] [filename]\n", argv[0]);
-			printf("     --bits <n> : set n bits samples (default is 8)\n");
-			printf("     --unsigned : unsigned PCM samples (default is signed)\n");
-			return 0;
-		} else if(strcmp(argv[i], "--bits") == 0) {
-			if(++i >= argc) {
-				fprintf(stderr, "--bits options need an argument\n");
-				return 1;
-			}
-			bits = atoi(argv[i]);
-			if(bits <= 0 || bits > 31) {
-				fprintf(stderr, "invalid value %s for option --bits\n", argv[i]);
-				return 1;
-			}
-		} else if(strcmp(argv[i], "--unsigned") == 0) {
-			signed_pcm = 0;
-		} else {
-			filename = argv[i];
-		}
-	}
 
 	values = malloc(3*(1 << bits));
 	if(values == NULL) {
@@ -163,4 +145,112 @@ int main(int argc, char * * argv)
 	if(filename != NULL) write_values(bits, values, filename);
 	free(values);
 	return 0;
+}
+
+
+static int
+search_bruteforce_simoes_window(int maxlevel, unsigned char * values){
+	unsigned int minerr, allerr=0;
+	unsigned int err=0;
+	unsigned int l,a,b,c,level,offset;
+	double f=(double)maxlevel/(double)(1 << bits);
+
+	for( l=0; l<1<<bits; l++){
+		level=(unsigned int)(f*(float)l);
+		minerr=1<<bits;
+//		printf("amplitude=%02x ", level);
+		for( a=0; a<16; a++){
+			for( b=0; b<16; b++){
+				for( c=0; c<16; c++){
+					err = abs(volumetable_original[a][b][c]-(int)level);
+					if( err<minerr ){
+						minerr = err;
+						if( values ){
+							offset = l;
+							if(signed_pcm){
+								offset ^= (1 << (bits - 1));
+							}
+							offset *= 3;
+							values[offset]=a;
+							values[offset+1]=b;
+							values[offset+2]=c;
+						}
+					}
+				}
+			}
+		}
+		allerr+=minerr;
+//		printf("err=%d ", lasterr);
+//		printf("\n");
+	}
+	return allerr;
+}
+
+static int
+search_bruteforce_simoes(){
+	unsigned int l, bestamplitude=0;
+	double allerr, minerr;
+	unsigned char * values;
+	minerr=0xFFFFFF;
+
+	for( l=0x10000; l>256 ; l--){
+		allerr=(double)search_bruteforce_simoes_window(l,NULL)/(double)l;
+//		printf("l:%d\n", l);
+		if( allerr < minerr ){
+			minerr=allerr;
+			bestamplitude=l;
+			printf("err(w:%d):%f\n", l, allerr);
+		}
+	}
+	printf("minerr:%f\n", minerr);
+
+	if(filename != NULL){
+		values = malloc(3*(1 << bits));
+		search_bruteforce_simoes_window(bestamplitude,values);
+/*
+		filename="l33121.s";
+		search_bruteforce_simoes_window(33121);
+*/
+		write_values(bits, values, filename);
+		free(values);
+	}
+	return 0;
+}
+
+int main(int argc, char * * argv)
+{
+	int i;
+	int mode=0;
+	for(i = 1; i < argc; i++) {
+		if(strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
+			printf("Usage : %s [options] [filename]\n", argv[0]);
+			printf("     --bits <n> : set n bits samples (default is 8)\n");
+			printf("     --unsigned : unsigned PCM samples (default is signed)\n");
+			return 0;
+		} else if(strcmp(argv[i], "--bits") == 0) {
+			if(++i >= argc) {
+				fprintf(stderr, "--bits options need an argument\n");
+				return 1;
+			}
+			bits = atoi(argv[i]);
+			if(bits <= 0 || bits > 31) {
+				fprintf(stderr, "invalid value %s for option --bits\n", argv[i]);
+				return 1;
+			}
+		} else if(strcmp(argv[i], "--unsigned") == 0) {
+			signed_pcm = 0;
+		} else if(strcmp(argv[i], "--math") == 0) {
+			mode = 1;
+		} else {
+			filename = argv[i];
+		}
+	}
+
+	switch( mode ){
+		default:
+		case 0:		//bruteforce search
+			return search_bruteforce_simoes();
+		case 1: 	//math
+			return calc();
+	}
 }
