@@ -1,10 +1,14 @@
-; CosmosEx media player prototype for Atari STE
+; CosmosEx media player prototype for Atari ST/STE
 ; AUDIO support only
 ; (c) 2016 nanard
 
-buffersize equ	32768
+YM_USE_AUTOINTERRUPT	EQU 0  	;0=no auto interrupt, 1=use auto interrupt
+
+;buffersize equ	32768
+buffersize equ	65536
 buffersectorcount	equ	buffersize/512
-buffersizecode equ	6
+;buffersizecode equ	6
+buffersizecode equ	7
 flock	equ	$43e
 
 	; MACRO(S) DEFINITION(S)
@@ -21,14 +25,38 @@ flock	equ	$43e
 	lea msg(pc),a0
 	bsr _cconws
 
+	; make $10000 aligned buffer
+	move.l	#buffer+$fffe,d0
+	clr.w	d0
+	move.l	d0,pbuffer
+
+	; check sound hardware through _SND cookie
+	move.l	#'_SND',d6
+	supexec get_cookie
+	cmp.l	#-1,d0
+	beq	.use_ym
+	btst #1,d0
+	sne.b	use_ste_dma
+.use_ym
+
+	;sf.b	use_ste_dma	; force use of YM chip
+
 	; set parameters
 	lea	openparams,a4
 	move.l	#'CEMP',(a4)+	; signature
 	move.w	#1,(a4)+		; audio rate :
-	;move.w	#25033,(a4)+	; 25033
-	move.w	#50066,(a4)+	; 50066
-	move.w	#2,(a4)+		; force Mono
-	move.w	#0,(a4)+		; false
+	tst.b	use_ste_dma
+	beq.s	.ymparams
+	;move.w	#25033,(a4)+	;   25033
+	move.w	#50066,(a4)+	;   50066
+	move.w	#2,(a4)+		; Force Mono :
+	move.w	#0,(a4)+		;   false
+	bra.s	.cont
+.ymparams
+	move.w	#20000,(a4)+	;   20000
+	move.w	#2,(a4)+		; Force Mono :
+	move.w	#1,(a4)+		;   true
+.cont
 	move.w	#$ff,(a4)+		; path / url
 
 	; Build full file path for argument !
@@ -37,7 +65,7 @@ flock	equ	$43e
 	;addq.l	#2,sp
 	;move.l	d0,a0		; dta / command line
 	move.l	4(sp),a0	; process basepage
-	lea		128(a0),a0	; command line
+	lea	128(a0),a0	; command line
 	moveq	#0,d0
 	move.b	(a0)+,d0	; command line length
 	clr.b	(a0,d0.w)	; zero byte at end of command line
@@ -110,35 +138,35 @@ flock	equ	$43e
 	; display info
 	lea msgmagic(pc),a0
 	bsr _cconws
-	lea magic(pc),a0
+	lea magic,a0
 	bsr _cconws
 	lea msgheadersize(pc),a0
 	bsr _cconws
-	move.l headersize(pc),d0
+	move.l headersize,d0
 	bsr printwdec
 	lea msgencoding(pc),a0
 	bsr _cconws	
-	move.l encoding(pc),d0
+	move.l encoding,d0
 	bsr printwdec
 	lea msgsamplerate(pc),a0
 	bsr _cconws
-	move.l samplerate(pc),d0
+	move.l samplerate,d0
 	bsr printwdec
 	lea msgnchannels(pc),a0
 	bsr _cconws
-	move.l nchannel(pc),d0
+	move.l nchannel,d0
 	bsr printwdec
 
-	move.l	datasize(pc),d4
+	move.l	datasize,d4
 	bmi	.nolength
 	lea playtime(pc),a0
 	bsr _cconws
-	move.l nchannel(pc),d0
+	move.l nchannel,d0
 	cmpi.l #1,d0
 	beq .ismono
 	lsr.l #1,d4
 .ismono:
-	move.l	samplerate(pc),d0
+	move.l	samplerate,d0
 	divu.w	d0,d4
 	moveq.l #0,d1
 	move.w	d4,d1	; quotient = total seconds
@@ -155,7 +183,7 @@ flock	equ	$43e
 	trap #1 		; Cconout
 	addq.l #4,sp
 	swap	d4		; samples reminder
-	move.l	samplerate(pc),d1
+	move.l	samplerate,d1
 	;mulu.w	#100,d4		; to get 1/100th seconds
 	mulu.w	#1000,d4	; to get milliseconds
 	divu.w	d1,d4
@@ -172,11 +200,11 @@ flock	equ	$43e
 	;cmpi.l	#2,d0
 	;bne		readerr	
 
-	move.l headersize(pc),d0
+	move.l headersize,d0
 	subi.l #24,d0
 	bls .noinfo	; branch on lower than or same
 
-	lea info(pc),a0
+	lea info,a0
 .printinfoloop:
 	move.l a0,a1
 .lbl1:
@@ -200,6 +228,14 @@ flock	equ	$43e
 
 .noinfo:
 
+	lea	msgdma(pc),a0
+	tst.b	use_ste_dma
+	bne.s	.use_dma
+	lea	msgym(pc),a0
+.use_dma:
+	bsr _cconws
+	lea	msgplayback(pc),a0
+	bsr _cconws
 
 	; stream and play data
 
@@ -207,10 +243,58 @@ flock	equ	$43e
 	supexec	fillbuffer0
 	supexec	fillbuffer1
 
-	supexec	setdma
-
 	lea	playmsg(pc),a0
 	bsr _cconws
+
+	tst.b	use_ste_dma
+	bne.s	.initdma
+.initym
+	move.l 	pbuffer,ymplaypointer
+	lea		replay_ym_tos_slow,a0
+	;lea		replay_ym_tos_fast,a0
+
+	;get replay entries (init,deinit,timer)
+	move.l 	(a0)+,a1
+	jsr 	(a1) 		;ym replay init - initialize _before_ reading the other pointers!
+	movem.l (a0),a2-a3
+	movem.l a1-a3,preplay_current
+
+	supexec	yminit
+
+	; MFP clock 2457600Hz
+	; Interrupt frequency = 2457600 / divider / data
+	; data * divider = 2457600 / frequency
+	; data = 8bit (0 to 255)
+	; divider =  %001 => 4, %010 => 10, %011 => 16
+	;     %100 => 50, %101 => 64, %110 => 100, %111 => 200
+
+	move.l	#2457600/4,d0
+	move.l	samplerate,d1
+	divu.w	d1,d0
+
+	move.l 	preplay_current_timer,-(sp) ; vector
+	move.w	d0,-(sp)	; data = count
+	move.w	#%0001,-(sp)	;Delay mode, divide by 4
+	move.w	#0,-(sp)	; Timer A
+	move.w  #31,-(sp)	; Xbtimer
+	trap    #14			; Call XBIOS
+	lea		12(sp),sp
+
+	lea		buffer0,a0
+	move.l	#buffersize,d0
+	add.l	a0,d0
+	move.l	a0,ymbuffcurrent
+	move.l	d0,ymbuffend
+
+	move.w	#13,-(sp)	; Timer A
+	move.w	#27,-(sp)	; Jenabint
+	trap	#14			; Call XBIOS
+	addq.l	#4,sp
+
+	bra	mainloop
+
+.initdma
+	supexec	setdma
 
 	lea	buffer1,a0
 	move.l	a0,d5
@@ -320,7 +404,7 @@ nndmemcpy:
 
 	; acsi related functions
 fillbuffer0:
-	lea	buffer0(pc),a1
+	lea	buffer0,a1
 	bra	fillbuffer
 fillbuffer1:
 	lea	buffer1,a1
@@ -328,7 +412,7 @@ fillbuffer:
 	move.l	a1,d1
 	lea acsicmd(pc),a0
 	move.b	#3,4(a0)	; command readStream
-	move.b	streamid(pc),d0
+	move.b	streamid,d0
 	ori.b	#32*buffersizecode,d0
 	move.b	d0,5(a0)	; stream id + buffer size
 	move.w	#buffersectorcount,d2
@@ -338,13 +422,13 @@ fillbuffer:
 closestream:
 	lea	acsicmd(pc),a0
 	move.b	#4,4(a0)	; command closeStream
-	move.b	streamid(pc),5(a0)	; stream id
+	move.b	streamid,5(a0)	; stream id
 	bsr	sendacsicmdnodma
 
 	; open media stream
 openstream:
 	lea	acsicmd(pc),a0
-	lea	openparams(pc),a1
+	lea	openparams,a1
 	move.l	a1,d1
 	moveq	#1,d2		; sector count
 	move.w	#$100,d3	; write
@@ -362,8 +446,8 @@ openstream:
 
 	lea	acsicmd(pc),a0
 	move.b	#2,4(a0)	; command getStreamInfo
-	move.b	streamid(pc),5(a0)	; stream id
-	lea	infoheader(pc),a1
+	move.b	streamid,5(a0)	; stream id
+	lea	infoheader,a1
 	move.l	a1,d1
 	moveq	#1,d2		; sector count
 	moveq	#0,d3		; read
@@ -527,7 +611,7 @@ setdma:
 	clr.b    $FFFF8901.w;DMA OFF
 	; SET DMA playback
 	;move.l   bufferp(pc),d1
-	lea		buffer(pc),a1
+	lea		buffer,a1
 	move.l	a1,d1
 	lea		$FFFF8902.w,a0	; start address
 	bsr.s	setdmaaddrsub
@@ -538,7 +622,7 @@ setdma:
 	lea		12(a0),a0	;$FFFF890E.w,a0	; end address
 	bsr.s	setdmaaddrsub
 
-	move.l	samplerate(pc),d1
+	move.l	samplerate,d1
 	move.l	#4096,d2	; rate <  8192 => play at  6258HZ (d0=0)
 	move.b	#-1,d0		; rate < 16384 => play at 12517HZ (d0=1)
 ratechooseloop:			; rate < 32768 => play at 25033HZ (d0=2)
@@ -546,7 +630,7 @@ ratechooseloop:			; rate < 32768 => play at 25033HZ (d0=2)
 	add.l	d2,d2
 	cmp.l	d1,d2
 	blt.s	ratechooseloop
-	move.l	nchannel(pc),d1
+	move.l	nchannel,d1
 	cmpi.b	#2,d1
 	beq.s mono
 	ori.b	#$80,d0		; set stereo bit
@@ -570,6 +654,49 @@ stopdmasound:
 	clr.b    $FFFF8901.w;DMA OFF
 	rts
 
+
+	; ----- YM -----
+yminit:
+	moveq	#10,d0
+.yminitloop:
+	move.b	d0,$ffff8800.w
+	clr.b	$ffff8802.w
+	dbra	d0,.yminitloop
+	move.b	#7,$ffff8800.w
+	;move.b	#%11111111,$ffff8802.w
+	move.b	$ffff8800.w,d0
+	ori.b	#%00111111,d0
+	move.b	d0,$ffff8802.w
+
+	move.l  $114.w,save114 		;save 200 Hz timer
+	move.l 	#emptyirq,$114.w 	;empty 200Hz timer
+	IFNE YM_USE_AUTOINTERRUPT
+	bclr 	#3,$ffFFFA17.w 		;enable autointerrupt
+	ENDC
+	rts
+
+emptyirq:
+	rte
+
+	; back to silence
+ymstop:
+	move.l 	#$0700F800,$ffff8800.w
+	move.l 	#$08000000,$ffff8800.w
+	move.l 	#$09000000,$ffff8800.w
+	move.l 	#$0A000000,$ffff8800.w
+
+	move.l 	save114,$114.w 	;restore 200Hz timer
+	IFNE YM_USE_AUTOINTERRUPT
+	bset 	#3,$ffFFFA17.w 		;disable autointerrupt
+	ENDC
+	rts
+
+	; ------ includes -----
+	include "../asmlib/getcooki.s"
+replay_ym_tos_slow:
+	include "../ym_digit/replays/ym_tos_slow.s"
+replay_ym_tos_fast:
+	include "../ym_digit/replays/ym_tos_fast.s"
 
 
 
@@ -604,15 +731,58 @@ printbuffer:
 	dc.b	"00000000"
 printbufferend:
 	dc.b	0
+msgdma:
+	dc.b	"Using STE DMA Sound",0
+msgym:
+	dc.b	"Using YM2149F for",0
+msgplayback:
+	dc.b	" playback",$d,$a,0
 msg:
 	dc.b	"CosmosEx Media Player (prototype)"
 crlf:
 	dc.b	$d,$a,0
 acsicmd:
-	dc.b	$40,"CE",6,1,0
+	dc.b	$60,"CE",6,1,0
 
+ymplaypointer:
+	ds.l 	1
+ymvolumetable:
+	include	"../ym_digit/ymtable.s"
+
+
+	; --- BSS ---
 	bss
+use_ste_dma:
+	ds.b	1
+streamid:
+	ds.b	1
+
 	align 2
+preplay_current:
+preplay_current_init:
+	ds.l 	1
+preplay_current_deinit:
+	ds.l 	1
+preplay_current_timer:
+	ds.l 	1
+
+save114:
+	ds.l 	1
+ymbuffcurrent:
+	ds.l	1
+ymbuffend:
+	ds.l	1
+ymbuffnext:
+	ds.l	1
+ymbuffnextend:
+	ds.l	1
+currentbuffer:
+	ds.w	1
+functiontocall:
+	ds.l	1
+
+pbuffer:
+	ds.l	1
 openparams:
 	ds.b	512
 infoheader:
@@ -631,8 +801,6 @@ nchannel:
 info:
 	ds.b	512-24
 
-streamid:
-	ds.b	1
 	align 2
 buffer:
 buffer0:
@@ -640,3 +808,4 @@ buffer0:
 buffer1:
 	ds.b	buffersize
 
+	ds.b 	$10000 		;space for buffer alignment
