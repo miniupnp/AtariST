@@ -22,7 +22,7 @@ all:	show_gif.tos
 clean:
 	$(RM) *.o ngiflib/ngiflib.o show_gif.tos
 
-show_gif.tos:	show_gif.o ngiflib/ngiflib.o c2p_4bit.o
+show_gif.tos:	show_gif.o ngiflib/ngiflib.o c2p_4bit2.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 show_gif.o:	show_gif.c ngiflib/ngiflib.h
