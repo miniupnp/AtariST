@@ -11,7 +11,12 @@ _c2p_line
 	movem.l	d2-d7,-(sp)		; push 6*4 = 24 bytes on stack
 	move.l	28(sp),a1		; 24+4(sp) = 28 : 1st arg
 	move.l	32(sp),a0
+	; are int 32 or 16 bits ?
+	ifd LONGINTABI
+	move.l	36(sp),d7
+	else
 	move.w	36(sp),d7
+	endif
 	;move.l	#$0f0f0f0f,d4
 	move.l	#$33333333,d4
 	move.l	#$00ff00ff,d5

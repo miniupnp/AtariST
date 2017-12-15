@@ -11,7 +11,11 @@ _c2p_line
 	movem.w	d2-d5,-(sp)	; push 4*2 = 8 bytes on stack
 	move.l	12(sp),a1	; 8+4(SP) = 12 : 1st arg
 	move.l	16(sp),a0
+	ifd LONGINTABI
+	move.l	20(sp),d5
+	else
 	move.w	20(sp),d5
+	endif
 	subq.w	#1,d5
 	bmi	.end
 .loop
