@@ -142,9 +142,12 @@ int main(int argc, char ** argv)
 	FILE * log;
 	ULONG ts;
 	LONG t0, t1;
+	WORD old_mode;
+	WORD palette_backup[16];
 
 	filename = "NGIFLIB\\SAMPLES\\borregas.gif";
 	filename = "NGIFLIB\\SAMPLES\\cirrhose.gif";
+	filename = "NGIFLIB\\SAMPLES\\the_den.gif";
 	/*filename = "NGIFLIB\\SAMPLES\\amigagry.gif";*/
 	/*filename = "NGIFLIB\\SAMPLES\\nomercyi.gif";*/
 	/*filename = "NGIFLIB\\SAMPLES\\exo7-monsta32.gif";*/
@@ -158,6 +161,14 @@ int main(int argc, char ** argv)
 		fprintf(stderr, "ERROR\n");
 		return 1;
 	}
+
+	old_mode = Getrez();
+	if(old_mode != ST_LOW)
+		Setscreen((void *)-1, (void *)-1, ST_LOW);
+	for(i = 0; i < 16; i++) {
+		palette_backup[i] = Setcolor(i, -1);
+	}
+
 	gif = malloc(sizeof(struct ngiflib_gif));
 	memset(gif, 0, sizeof(struct ngiflib_gif));
 	gif->input.file = fgif;
@@ -286,5 +297,11 @@ int main(int argc, char ** argv)
 	fprintf(log, "\n");
 	fclose(log);
 	Crawcin();
+	/*Setpalette(palette_backup);*/
+	for(i = 0; i < 16; i++) {
+		Setcolor(i, palette_backup[i]);
+	}
+	if(old_mode != ST_LOW)
+		Setscreen((void *)-1, (void *)-1, old_mode);
 	return 0;
 }
