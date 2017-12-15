@@ -1,8 +1,19 @@
 #include <stdio.h>
+#ifdef __VBCC__
 #include <tos.h>
+#else
+#include <mint/osbind.h>
+#define LONG long
+#define WORD short
+#define ULONG unsigned long
+#define UWORD unsigned short
+#define UBYTE unsigned char
+#endif
 #include "ngiflib.h"
 
+#ifdef __VBCC__
 size_t __stack = 65536; /* 64KB stack-size */
+#endif /* __VBCC__ */
 
 #define ASM_C2P_LINE
 
@@ -113,9 +124,9 @@ static void set_palette(struct ngiflib_gif * gif, struct ngiflib_rgb * pal, int 
 
 static void draw_line(struct ngiflib_gif * gif, union ngiflib_pixpointer line, int Y)
 {
-	WORD * dest;
+	UWORD * dest;
 	if(Y < 200) {
-		dest = (WORD *)Physbase() + Y * 80;
+		dest = (UWORD *)Physbase() + Y * 80;
 		c2p_line(dest, line.p8, (gif->width + 15) >> 4);
 	}
 }
@@ -259,7 +270,7 @@ int main(int argc, char ** argv)
 				for(p = gif->frbuff.p8, l = (unsigned long)gif->width*gif->height; l > 0; l--, p++) {
 					*p = trans_tab[*p];
 				}
-				c2p(Physbase(), gif->frbuff.p8, gif->width, gif->height);
+				c2p((UWORD *)Physbase(), gif->frbuff.p8, gif->width, gif->height);
 			} else {
 				/* TODO : some color reduction ! */
 			}
@@ -267,6 +278,11 @@ int main(int argc, char ** argv)
 	}
 
 	GifDestroy(gif);
+#ifdef __VBCC__
+	fprintf(log, " VBCC");
+#elif defined(__GNUC__)
+	fprintf(log, " GCC %d.%d.%d", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
+#endif
 	fprintf(log, "\n");
 	fclose(log);
 	Crawcin();
