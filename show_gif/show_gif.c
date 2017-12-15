@@ -23,9 +23,15 @@ extern void c2p_line(UWORD * planar, UBYTE * chunky, int count);
 
 #define ABS(i) my_abs(i)
 
+#if !defined(NGIFLIB_PALETTE_USE_BYTES)
 #define COLOR_DIFF(A,B) (  ABS(((int)((A).r) - (int)(B).r) & ~31) \
                          + ABS(((int)((A).g) - (int)(B).g) & ~31) \
                          + ABS(((int)((A).b) - (int)(B).b) & ~31) )
+#else
+#define COLOR_DIFF(A,B) (  ABS(((int)((A)[0]) - (int)(B)[0]) & ~31) \
+                         + ABS(((int)((A)[1]) - (int)(B)[1]) & ~31) \
+                         + ABS(((int)((A)[2]) - (int)(B)[2]) & ~31) )
+#endif
 
 static int my_abs(int i)
 {
@@ -107,7 +113,11 @@ void c2p(UWORD * planar, UBYTE * chunky, int width, int height)
 }
 
 #ifdef NGIFLIB_ENABLE_CALLBACKS
+#ifdef NGIFLIB_PALETTE_USE_BYTES
+static void set_palette(struct ngiflib_gif * gif, const u8 * pal, int ncolors)
+#else
 static void set_palette(struct ngiflib_gif * gif, struct ngiflib_rgb * pal, int ncolors)
+#endif
 {
 	int i;
 	static u16 palette[16];
@@ -115,9 +125,16 @@ static void set_palette(struct ngiflib_gif * gif, struct ngiflib_rgb * pal, int 
 	printf("set_palette(.. %d)\n", ncolors);
 	for(i = 0; i < 16 && i < ncolors; i++) {
 		/*printf("%2d: %02x %02x %02x\n", i, (int)pal[i].r, (int)pal[i].g, (int)pal[i].b);*/
+#ifdef NGIFLIB_PALETTE_USE_BYTES
+		palette[i] = to_ste_palette(pal[0],
+		                            pal[1],
+		                            pal[2]);
+		pal += 3;
+#else
 		palette[i] = to_ste_palette(pal[i].r,
 		                            pal[i].g,
 		                            pal[i].b);
+#endif
 	}
 	Setpalette(palette);
 }
@@ -244,7 +261,11 @@ int main(int argc, char ** argv)
 					int diff;
 					if(i == to_kick) continue;
 					if(freq[i] == 0) continue;
+#if !defined(NGIFLIB_PALETTE_USE_BYTES)
 					diff = COLOR_DIFF(img->palette[to_kick], img->palette[i]);
+#else
+					diff = COLOR_DIFF(img->palette+to_kick*3, img->palette+i*3);
+#endif
 					if(diff < min_diff) {
 						min_diff = diff;
 						close_color = i;
@@ -266,9 +287,15 @@ int main(int argc, char ** argv)
 				for(i = 0; i < 256; i++) {
 					if(freq[i] != 0) {
 						trans_tab[i] = c;
+#if !defined(NGIFLIB_PALETTE_USE_BYTES)
 						palette[c] = to_ste_palette(img->palette[i].r,
 						                            img->palette[i].g,
 						                            img->palette[i].b);
+#else
+						palette[c] = to_ste_palette(img->palette[i*3+0],
+						                            img->palette[i*3+1],
+						                            img->palette[i*3+2]);
+#endif
 						c++;
 					}
 				}
