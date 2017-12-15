@@ -326,7 +326,7 @@ int main(int argc, char ** argv)
 	Crawcin();
 	/*Setpalette(palette_backup);*/
 	for(i = 0; i < 16; i++) {
-		Setcolor(i, palette_backup[i]);
+		(void)Setcolor(i, palette_backup[i]);
 	}
 	if(old_mode != ST_LOW)
 		Setscreen((void *)-1, (void *)-1, old_mode);
