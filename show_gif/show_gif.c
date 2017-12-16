@@ -213,9 +213,15 @@ int main(int argc, char ** argv)
 		img = gif->cur_img;
 #ifndef NGIFLIB_ENABLE_CALLBACKS
 		for(i = 0; i < 16 && i < gif->ncolors; i++) {
+#if !defined(NGIFLIB_PALETTE_USE_BYTES)
 			palette[i] = to_ste_palette(img->palette[i].r,
 			                            img->palette[i].g,
 			                            img->palette[i].b);
+#else
+			palette[i] = to_ste_palette(img->palette[i*3+0],
+			                            img->palette[i*3+1],
+			                            img->palette[i*3+2]);
+#endif
 		}
 		Setpalette(palette);
 		/*for(i = 0; i < 16; i++) gif->frbuff.p8[i] = i;*/
