@@ -17,6 +17,7 @@ _c2p_line
 	else
 	move.w	36(sp),d7
 	endif
+	subq.w	#1,d7
 	;move.l	#$0f0f0f0f,d4
 	move.l	#$33333333,d4
 	move.l	#$00ff00ff,d5
