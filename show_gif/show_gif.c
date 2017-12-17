@@ -166,7 +166,9 @@ int show_gif(const char * filename)
 	struct ngiflib_gif * gif;
 	struct ngiflib_img * img;
 	FILE * fgif;
+#ifdef SHOW_GIF_LOG
 	FILE * log;
+#endif
 	ULONG ts;
 	LONG t0, t1;
 	struct animgif_image * anim = NULL;
@@ -174,7 +176,9 @@ int show_gif(const char * filename)
 	struct animgif_image * new_image;
 	unsigned int line_word_count = 0;
 
+#ifdef SHOW_GIF_LOG
 	log = fopen("show_gif.log", "a");
+#endif
 	memset(&gif, 0, sizeof(gif));
 	fgif = fopen(filename, "rb");
 	if(fgif == NULL) {
@@ -194,23 +198,29 @@ int show_gif(const char * filename)
 #endif
 
 	(void)Cursconf(0, 0);	/* hide cursor */
+#ifdef SHOW_GIF_LOG
 	ts = Gettime();
 	fprintf_ts(log, ts);
 	fprintf(log, " %s ", filename);
+#endif
 	for(;;) {
 		u16 palette[16];
 		t0 = Supexec(get200hz);
 		r = LoadGif(gif);
 		t1 = Supexec(get200hz);
 		if(r < 0) {
+#ifdef SHOW_GIF_LOG
 			fprintf(log, "failure");
+#endif
 			break;
 		} else if(r == 0) {
 			break;
 		}
 		/* (r == 1) */
 		image_count++;
+#ifdef SHOW_GIF_LOG
 		fprintf(log, "time=%ldms", (t1 - t0)*5);
+#endif
 		img = gif->cur_img;
 #ifndef NGIFLIB_ENABLE_CALLBACKS
 		for(i = 0; i < 16 && i < gif->ncolors; i++) {
@@ -229,9 +239,13 @@ int show_gif(const char * filename)
 		t0 = Supexec(get200hz);
 		c2p(Physbase(), gif->frbuff.p8, gif->width, gif->height);
 		t1 = Supexec(get200hz);
+#ifdef SHOW_GIF_LOG
 		fprintf(log, " c2p=%ldms", (t1 - t0)*5);
+#endif
 #endif /* NGIFLIB_ENABLE_CALLBACKS */
+#ifdef SHOW_GIF_LOG
 		fprintf(log, " %dc", (int)gif->ncolors);
+#endif
 		if(gif->ncolors > 16) {
 			unsigned long l;
 			unsigned int freq[256];
@@ -256,7 +270,9 @@ int show_gif(const char * filename)
 				/*if(freq[i] != 0) printf("%d %4d  #%02x%02x%02x\n", i, freq[i],
 				img->palette[i].r, img->palette[i].g, img->palette[i].b);*/
 			}
+#ifdef SHOW_GIF_LOG
 			fprintf(log, " %uused", used_colors);
+#endif
 			while(used_colors > 16) {
 				int to_kick = 0;
 				int close_color = 0;
@@ -344,6 +360,7 @@ int show_gif(const char * filename)
 	}
 
 	GifDestroy(gif);
+#ifdef SHOW_GIF_LOG
 #ifdef __VBCC__
 	fprintf(log, " VBCC");
 #elif defined(__GNUC__)
@@ -351,6 +368,8 @@ int show_gif(const char * filename)
 #endif
 	fprintf(log, "\n");
 	fclose(log);
+#endif /* SHOW_GIF_LOG */
+
 	if(image_count > 1) {
 		tmp_image = anim;
 		while(Cconis() == 0) {
