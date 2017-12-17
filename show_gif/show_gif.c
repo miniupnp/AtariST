@@ -9,6 +9,10 @@
 #define UWORD unsigned short
 #define UBYTE unsigned char
 #endif
+#ifndef E_OK
+#define E_OK 0
+#endif /* E_OK */
+
 #include "ngiflib.h"
 
 #ifdef __VBCC__
@@ -149,27 +153,15 @@ static void draw_line(struct ngiflib_gif * gif, union ngiflib_pixpointer line, i
 }
 #endif /* NGIFLIB_ENABLE_CALLBACKS */
 
-int main(int argc, char ** argv)
+int show_gif(const char * filename)
 {
 	int r, i;
 	struct ngiflib_gif * gif;
 	struct ngiflib_img * img;
-	const char * filename;
 	FILE * fgif;
 	FILE * log;
 	ULONG ts;
 	LONG t0, t1;
-	WORD old_mode;
-	WORD palette_backup[16];
-
-	filename = "NGIFLIB\\SAMPLES\\borregas.gif";
-	filename = "NGIFLIB\\SAMPLES\\cirrhose.gif";
-	filename = "NGIFLIB\\SAMPLES\\the_den.gif";
-	/*filename = "NGIFLIB\\SAMPLES\\amigagry.gif";*/
-	/*filename = "NGIFLIB\\SAMPLES\\nomercyi.gif";*/
-	/*filename = "NGIFLIB\\SAMPLES\\exo7-monsta32.gif";*/
-	/*filename = "NGIFLIB\\SAMPLES\\far_away.gif";*/
-	/*filename = "NGIFLIB\\SAMPLES\\mr_boomi.gif";*/
 
 	log = fopen("show_gif.log", "a");
 	memset(&gif, 0, sizeof(gif));
@@ -177,13 +169,6 @@ int main(int argc, char ** argv)
 	if(fgif == NULL) {
 		fprintf(stderr, "ERROR\n");
 		return 1;
-	}
-
-	old_mode = Getrez();
-	if(old_mode != ST_LOW)
-		Setscreen((void *)-1, (void *)-1, ST_LOW);
-	for(i = 0; i < 16; i++) {
-		palette_backup[i] = Setcolor(i, -1);
 	}
 
 	gif = malloc(sizeof(struct ngiflib_gif));
@@ -330,6 +315,88 @@ int main(int argc, char ** argv)
 	fprintf(log, "\n");
 	fclose(log);
 	Crawcin();
+	return 0;
+}
+
+int main(int argc, char ** argv)
+{
+	int i;
+	WORD old_mode;
+	WORD palette_backup[16];
+	char * filename = NULL;
+	short attr;
+
+	old_mode = Getrez();
+	if(old_mode != ST_LOW)
+		Setscreen((void *)-1, (void *)-1, ST_LOW);
+	for(i = 0; i < 16; i++) {
+		palette_backup[i] = Setcolor(i, -1);
+	}
+
+	/*filename = "NGIFLIB\\SAMPLES\\borregas.gif";*/
+	/*filename = "NGIFLIB\\SAMPLES\\cirrhose.gif";*/
+	/*filename = "NGIFLIB\\SAMPLES\\the_den.gif";*/
+	/*filename = "NGIFLIB\\SAMPLES\\amigagry.gif";*/
+	/*filename = "NGIFLIB\\SAMPLES\\nomercyi.gif";*/
+	/*filename = "NGIFLIB\\SAMPLES\\exo7-monsta32.gif";*/
+	/*filename = "NGIFLIB\\SAMPLES\\far_away.gif";*/
+	/*filename = "NGIFLIB\\SAMPLES\\mr_boomi.gif";*/
+
+	if(argc > 1) filename = argv[1];
+	if(filename != NULL) {
+		attr = Fattrib(filename, 0, 0);
+		if(attr < 0) {
+			fprintf(stderr, "file or directory %s not found.\n", filename);
+			Crawcin();
+			goto error;
+		} else {
+			if((attr & FA_DIR) != 0) {
+				/* directory */
+				char path[256];
+				char * p;
+				Dgetpath(path, 0);
+				printf("PATH=%s\n", path);
+				p = path + strlen(path);
+				*p++ = '\\';
+				strcpy(p, filename);
+				printf("PATH=%s\n", path);
+				Dsetpath(path);
+				Dgetpath(path, 0);
+				printf("PATH=%s\n", path);
+				Crawcin();
+				filename = NULL;
+			}
+		}
+	}
+	if(filename == NULL) {
+#ifdef __VBCC__
+		DTA dta;
+#else
+		_DTA dta;
+#endif
+		short r;
+
+		Fsetdta(&dta);
+#ifdef FA_READONLY
+		r = Fsfirst("*.GIF", FA_READONLY | FA_HIDDEN | FA_SYSTEM | FA_ARCHIVE);
+#else
+		r = Fsfirst("*.GIF", FA_RDONLY | FA_HIDDEN | FA_SYSTEM | FA_CHANGED);
+#endif
+		while(r == E_OK) {
+#ifdef __VBCC__
+			filename = dta.d_fname;
+#else
+			filename = dta.dta_name;
+#endif
+			show_gif(filename);
+			r = Fsnext();
+		}
+	} else {
+		/* regular file */
+		show_gif(filename);
+	}
+
+error:
 	/*Setpalette(palette_backup);*/
 	for(i = 0; i < 16; i++) {
 		(void)Setcolor(i, palette_backup[i]);

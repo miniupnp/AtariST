@@ -33,12 +33,24 @@ LDFLAGS = $(CFLAGS)
 OBJS = show_gif.o ngiflib/ngiflib.o c2p_4bit2.o
 GCC_OBJS = $(subst .o,_gcc.o,$(OBJS))
 
-all:	show_gif.tos gshowgif.tos
+BINS = show_gif.ttp gshowgif.tos
+
+all:	$(BINS) floppy
+
+floppy:	show_gif.st
 
 clean:
-	$(RM) $(OBJS) $(GCC_OBJS) show_gif.tos gshowgif.tos
+	$(RM) $(OBJS) $(GCC_OBJS) $(BINS)
+
+show_gif.st:	$(BINS) DESKTOP.INF *.gif
+	$(RM) $@
+	hmsa $@ DS
+	MTOOLS_NO_VFAT=1 mcopy -i $@ -v $^ ::
 
 show_gif.tos:	$(OBJS)
+	$(CC) $(LDFLAGS) -final -o $@ $^ $(LDLIBS)
+
+show_gif.ttp:	$(OBJS)
 	$(CC) $(LDFLAGS) -final -o $@ $^ $(LDLIBS)
 
 gshowgif.tos:	$(GCC_OBJS)
