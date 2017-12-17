@@ -19,6 +19,12 @@
 size_t __stack = 65536; /* 64KB stack-size */
 #endif /* __VBCC__ */
 
+struct animgif_image {
+	struct animgif_image * next;
+	int delay_time;
+	UWORD pixel_data[1];
+};
+
 #define ASM_C2P_LINE
 
 #ifdef ASM_C2P_LINE
@@ -155,6 +161,7 @@ static void draw_line(struct ngiflib_gif * gif, union ngiflib_pixpointer line, i
 
 int show_gif(const char * filename)
 {
+	int image_count = 0;
 	int r, i;
 	struct ngiflib_gif * gif;
 	struct ngiflib_img * img;
@@ -162,6 +169,10 @@ int show_gif(const char * filename)
 	FILE * log;
 	ULONG ts;
 	LONG t0, t1;
+	struct animgif_image * anim = NULL;
+	struct animgif_image * tmp_image;
+	struct animgif_image * new_image;
+	unsigned int line_word_count = 0;
 
 	log = fopen("show_gif.log", "a");
 	memset(&gif, 0, sizeof(gif));
@@ -186,14 +197,19 @@ int show_gif(const char * filename)
 	ts = Gettime();
 	fprintf_ts(log, ts);
 	fprintf(log, " %s ", filename);
-	t0 = Supexec(get200hz);
-	r = LoadGif(gif);
-	t1 = Supexec(get200hz);
-	if(r == 0) {
-		fprintf(log, "failure");
-	} else if(r == 1) {
+	for(;;) {
 		u16 palette[16];
-
+		t0 = Supexec(get200hz);
+		r = LoadGif(gif);
+		t1 = Supexec(get200hz);
+		if(r < 0) {
+			fprintf(log, "failure");
+			break;
+		} else if(r == 0) {
+			break;
+		}
+		/* (r == 1) */
+		image_count++;
 		fprintf(log, "time=%ldms", (t1 - t0)*5);
 		img = gif->cur_img;
 #ifndef NGIFLIB_ENABLE_CALLBACKS
@@ -304,6 +320,27 @@ int show_gif(const char * filename)
 				/* TODO : some color reduction ! */
 			}
 		}
+		if(line_word_count == 0) {
+			line_word_count = ((gif->width + 15) >> 2) & ~3;
+		}
+		new_image = malloc(sizeof(struct animgif_image) + sizeof(UWORD) * line_word_count * gif->height);
+		if(new_image) {
+			new_image->next = NULL;
+			new_image->delay_time = gif->delay_time;
+			for(i = 0; i < gif->height; i++) {
+				memcpy(new_image->pixel_data + i * line_word_count,
+				       (UWORD *)Physbase() + 80 * i,
+				       sizeof(UWORD) * line_word_count);
+			}
+			if(anim == NULL) {
+				anim = new_image;
+			} else {
+				tmp_image = anim;
+				while(tmp_image->next != NULL)
+					tmp_image = tmp_image->next;
+				tmp_image->next = new_image;
+			}
+		}
 	}
 
 	GifDestroy(gif);
@@ -314,6 +351,25 @@ int show_gif(const char * filename)
 #endif
 	fprintf(log, "\n");
 	fclose(log);
+	if(image_count > 1) {
+		tmp_image = anim;
+		while(Cconis() == 0) {
+			Vsync();
+			t0 = Supexec(get200hz);
+			t1 = t0 + tmp_image->delay_time * 2;
+			for(i = 0; i < gif->height; i++) {
+				memcpy((UWORD *)Physbase() + 80 * i,
+				       tmp_image->pixel_data + i * line_word_count,
+				       sizeof(UWORD) * line_word_count);
+			}
+			do {
+				if(Cconis() != 0)
+					break;
+			} while(Supexec(get200hz) < t1);
+			tmp_image = tmp_image->next;
+			if(tmp_image == NULL) tmp_image = anim;
+		}
+	}
 	Crawcin();
 	return 0;
 }
