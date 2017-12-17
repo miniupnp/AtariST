@@ -50,6 +50,7 @@ static int my_abs(int i)
 	return (-i);
 }
 
+#ifdef SHOW_GIF_LOG
 void fprintf_ts(FILE *f, ULONG ts)
 {
 	/* http://toshyp.atari.org/en/004009.html
@@ -64,6 +65,7 @@ void fprintf_ts(FILE *f, ULONG ts)
 	        (int)(ts >> 25)+1980, (int)(ts >> 21) & 0xf, (int)(ts >> 16) & 0x1f,
 	        (int)(ts >> 11) & 0x1f, (int)(ts >> 5) & 0x3f, ((int)ts & 0x1f) * 2);
 }
+#endif
 
 /* return 200Hz System timer */
 LONG get200hz(void)
@@ -168,8 +170,8 @@ int show_gif(const char * filename)
 	FILE * fgif;
 #ifdef SHOW_GIF_LOG
 	FILE * log;
-#endif
 	ULONG ts;
+#endif
 	LONG t0, t1;
 	struct animgif_image * anim = NULL;
 	struct animgif_image * tmp_image;
@@ -374,8 +376,8 @@ int show_gif(const char * filename)
 		tmp_image = anim;
 		while(Cconis() == 0) {
 			Vsync();
-			t0 = Supexec(get200hz);
-			t1 = t0 + tmp_image->delay_time * 2;
+			t1 = Supexec(get200hz);
+			t1 += tmp_image->delay_time * 2;
 			for(i = 0; i < gif->height; i++) {
 				memcpy((UWORD *)Physbase() + 80 * i,
 				       tmp_image->pixel_data + i * line_word_count,
@@ -390,6 +392,12 @@ int show_gif(const char * filename)
 		}
 	}
 	Crawcin();
+	/* free memory */
+	while(anim != NULL) {
+		tmp_image = anim->next;
+		free(anim);
+		anim = tmp_image;
+	}
 	return 0;
 }
 
