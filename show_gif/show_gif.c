@@ -393,7 +393,10 @@ int show_gif(const char * filename)
 		while(Cconis() == 0) {
 			Vsync();
 			t1 = Supexec(get200hz);
-			t1 += tmp_image->delay_time * 2;
+			if(tmp_image->delay_time == 0)
+				t1 += 20;	/* default of 1/10th of seconds */
+			else
+				t1 += tmp_image->delay_time * 2;
 			for(i = 0; i < gif->height; i++) {
 				memcpy((UWORD *)Physbase() + 80 * i,
 				       tmp_image->pixel_data + i * line_word_count,
