@@ -43,7 +43,7 @@ floppy:	show_gif.st
 clean:
 	$(RM) $(OBJS) $(GCC_OBJS) $(BINS)
 
-show_gif.st:	$(BINS) DESKTOP.INF *.gif
+show_gif.st:	show_gif.ttp DESKTOP.INF *.gif
 	$(RM) $@
 	hmsa $@ DS
 	MTOOLS_NO_VFAT=1 mcopy -i $@ -v $^ ::

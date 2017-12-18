@@ -154,9 +154,19 @@ static void set_palette(struct ngiflib_gif * gif, struct ngiflib_rgb * pal, int 
 static void draw_line(struct ngiflib_gif * gif, union ngiflib_pixpointer line, int Y)
 {
 	UWORD * dest;
+	int count;
 	if(Y < 200) {
 		dest = (UWORD *)Physbase() + Y * 80;
-		c2p_line(dest, line.p8, (gif->width + 15) >> 4);
+		count = (gif->width + 15) >> 4;
+		c2p_line(dest, line.p8, count);
+		if((gif->width & 15) != 0) {
+			UWORD mask = (UWORD)0xffff << (16 - (gif->width & 15));
+			dest += count * 4;
+			*(--dest) &= mask;
+			*(--dest) &= mask;
+			*(--dest) &= mask;
+			*(--dest) &= mask;
+		}
 	}
 }
 #endif /* NGIFLIB_ENABLE_CALLBACKS */
