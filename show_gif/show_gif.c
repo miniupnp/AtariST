@@ -134,7 +134,9 @@ static void set_palette(struct ngiflib_gif * gif, struct ngiflib_rgb * pal, int 
 	int i;
 	static u16 palette[16];
 
+#ifdef SHOW_GIF_LOG
 	printf("set_palette(.. %d)\n", ncolors);
+#endif
 	for(i = 0; i < 16 && i < ncolors; i++) {
 		/*printf("%2d: %02x %02x %02x\n", i, (int)pal[i].r, (int)pal[i].g, (int)pal[i].b);*/
 #ifdef NGIFLIB_PALETTE_USE_BYTES
@@ -159,6 +161,10 @@ static void draw_line(struct ngiflib_gif * gif, union ngiflib_pixpointer line, i
 		dest = (UWORD *)Physbase() + Y * 80;
 		count = (gif->width + 15) >> 4;
 		c2p_line(dest, line.p8, count);
+		if(gif->cur_img->interlaced && ((Y & 1) == 0)) {
+			/* duplicate even lines */
+			memcpy(dest + 80, dest, count << 3);
+		}
 		if((gif->width & 15) != 0) {
 			UWORD mask = (UWORD)0xffff << (16 - (gif->width & 15));
 			dest += count * 4;
