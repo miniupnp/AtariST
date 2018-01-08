@@ -50,9 +50,11 @@ show_gif.st:	show_gif.ttp DESKTOP.INF *.gif
 
 show_gif.tos:	$(OBJS)
 	$(CC) $(LDFLAGS) -final -o $@ $^ $(LDLIBS)
+	if which upx ; then upx --best $@ ; fi
 
 show_gif.ttp:	$(OBJS)
 	$(CC) $(LDFLAGS) -final -o $@ $^ $(LDLIBS)
+	if which upx ; then upx --best $@ ; fi
 
 gshowgif.tos:	$(GCC_OBJS)
 	$(GCC) $(GCCFLAGS) -Wl,--traditional-format -o $@ $^ $(LDLIBS)

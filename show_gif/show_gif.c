@@ -22,6 +22,7 @@ size_t __stack = 65536; /* 64KB stack-size */
 struct animgif_image {
 	struct animgif_image * next;
 	int delay_time;
+	UWORD palette[16];
 	UWORD pixel_data[1];
 };
 
@@ -361,6 +362,9 @@ int show_gif(const char * filename)
 		if(new_image) {
 			new_image->next = NULL;
 			new_image->delay_time = gif->delay_time;
+			for(i = 0; i < 16 ; i++) {
+				new_image->palette[i] = Setcolor(i, -1);
+			}
 			for(i = 0; i < gif->height; i++) {
 				memcpy(new_image->pixel_data + i * line_word_count,
 				       (UWORD *)Physbase() + 80 * i,
@@ -397,6 +401,7 @@ int show_gif(const char * filename)
 				t1 += 20;	/* default of 1/10th of seconds */
 			else
 				t1 += tmp_image->delay_time * 2;
+			Setpalette(tmp_image->palette);
 			for(i = 0; i < gif->height; i++) {
 				memcpy((UWORD *)Physbase() + 80 * i,
 				       tmp_image->pixel_data + i * line_word_count,
