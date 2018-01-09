@@ -116,12 +116,26 @@ void c2p_line(UWORD * planar, UBYTE * chunky, int count)
 
 void c2p(UWORD * planar, UBYTE * chunky, int width, int height)
 {
-	int count;
+	int count, line;
+	UWORD * dest;
+
+	dest = planar;
 	count = (width + 15) >> 4;	/* word per plane / line count */
-	for(; height > 0; height--) {
-		c2p_line(planar, chunky, count);
-		planar += 80;	/* line of ST frame buffer is 320 pixels = 80 words */
+	for(line = height; line > 0; line--) {
+		c2p_line(dest, chunky, count);
+		dest += 80;	/* line of ST frame buffer is 320 pixels = 80 words */
 		chunky += width;
+	}
+	if((width & 15) != 0) {
+		UWORD mask = (UWORD)0xffff << (16 - (width & 15));
+		dest = planar + count * 4;
+		for(line = height; line > 0; line--) {
+			*(--dest) &= mask;
+			*(--dest) &= mask;
+			*(--dest) &= mask;
+			*(--dest) &= mask;
+			dest += (80 + 4);
+		}
 	}
 }
 
