@@ -220,7 +220,7 @@ int show_gif(const char * filename)
 #ifdef SHOW_GIF_LOG
 	ts = Gettime();
 	fprintf_ts(log, ts);
-	fprintf(log, " %s ", filename);
+	fprintf(log, " %s", filename);
 #endif
 	for(;;) {
 		u16 palette[16];
@@ -229,7 +229,7 @@ int show_gif(const char * filename)
 		t1 = Supexec(get200hz);
 		if(r < 0) {
 #ifdef SHOW_GIF_LOG
-			fprintf(log, "failure");
+			fprintf(log, " failure");
 #endif
 			break;
 		} else if(r == 0) {
@@ -238,7 +238,7 @@ int show_gif(const char * filename)
 		/* (r == 1) */
 		image_count++;
 #ifdef SHOW_GIF_LOG
-		fprintf(log, "time=%ldms", (t1 - t0)*5);
+		fprintf(log, " time=%ldms", (t1 - t0)*5);
 #endif
 		img = gif->cur_img;
 #ifndef NGIFLIB_ENABLE_CALLBACKS
