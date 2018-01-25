@@ -43,10 +43,10 @@ floppy:	show_gif.st
 clean:
 	$(RM) $(OBJS) $(GCC_OBJS) $(BINS)
 
-show_gif.st:	show_gif.ttp DESKTOP.INF *.gif
+show_gif.st:	show_gif.ttp DESKTOP.INF.in *.gif
 	$(RM) $@
 	hmsa $@ DS
-	MTOOLS_NO_VFAT=1 mcopy -i $@ -v $^ ::
+	for s in $^ ; do d=`echo $$s | sed 's/\.in$$//'` ; MTOOLS_NO_VFAT=1 mcopy -i $@ -v $$s ::$$d ; done
 
 show_gif.tos:	$(OBJS)
 	$(CC) $(LDFLAGS) -final -o $@ $^ $(LDLIBS)
