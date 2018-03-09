@@ -29,13 +29,16 @@ def parse_stx(filename):
       # track descriptor
       size,fuzzyCount,sectorCount,trackFlags,trackLength,trackNumber,trackType = unpack_from('<LLHHHBB', stxdata, offset)
       o = 16
-      print 'track#%d' % track, size, fuzzyCount, sectorCount, '%02X' % trackFlags
-      if (trackFlags & 1) != 0:
+      #print 'track#%d' % track, size, fuzzyCount, sectorCount, '%02X' % trackFlags
+      print 'track#%d size=%d fuzzyCount=%d sectorCount=%d Flags $%02X' % (track, size, fuzzyCount, sectorCount, trackFlags)
+      if (trackFlags & 1) != 0 and sectorCount > 0:
+        print '    offset bitPos time  t h  n size CRC flags'
         for sector in range(0, sectorCount):
           # sector descriptor
           dataOffset, bitPosition, readTime, t,h,n,s,crc, fdcFlags, res = unpack_from('<LHHBBBBHBB', stxdata, offset + o)
           o += 16
-          print '  sector#%d' % sector, dataOffset, bitPosition, readTime, t, h, n, 128 << s, '$%04X' % crc, '%02X' %fdcFlags
+          #print '  #%d' % sector, dataOffset, bitPosition, readTime, t, h, n, 128 << s, '$%04X' % crc, '%02X' %fdcFlags
+          print '  #%d %5d %5d %5d %02d %d %2d %4d $%04X $%02X' % (sector, dataOffset, bitPosition, readTime, t, h, n, 128 << s, crc, fdcFlags)
       # Fuzzy Mask record
       o += fuzzyCount
       if (trackFlags & 0x40) != 0:
@@ -49,7 +52,7 @@ def parse_stx(filename):
         o += 2
         # TrackImageData is at offset + o
         SectorDataOffsetBase = o
-        print ' TrackImageSize=%d FirstSyncOffset=%d' % (TrackImageSize, FirstSyncOffset)
+        print ' $%06X TrackImageSize=%d FirstSyncOffset=%d' % (offset + o, TrackImageSize, FirstSyncOffset)
         o += TrackImageSize
       else:
         SectorDataOffsetBase = o
