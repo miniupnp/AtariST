@@ -139,6 +139,8 @@ void c2p(UWORD * planar, UBYTE * chunky, int width, int height)
 	}
 }
 
+static u16 palette[16];
+
 #ifdef NGIFLIB_ENABLE_CALLBACKS
 #ifdef NGIFLIB_PALETTE_USE_BYTES
 static void set_palette(struct ngiflib_gif * gif, const u8 * pal, int ncolors)
@@ -147,10 +149,9 @@ static void set_palette(struct ngiflib_gif * gif, struct ngiflib_rgb * pal, int 
 #endif
 {
 	int i;
-	static u16 palette[16];
 
 #ifdef SHOW_GIF_LOG
-	printf("set_palette(.. %d)\n", ncolors);
+	/*printf("set_palette(.. %d)\n", ncolors);*/
 #endif
 	for(i = 0; i < 16 && i < ncolors; i++) {
 		/*printf("%2d: %02x %02x %02x\n", i, (int)pal[i].r, (int)pal[i].g, (int)pal[i].b);*/
@@ -237,7 +238,6 @@ int show_gif(const char * filename)
 	fprintf(log, " %s", filename);
 #endif
 	for(;;) {
-		u16 palette[16];
 		t0 = Supexec(get200hz);
 		r = LoadGif(gif);
 		t1 = Supexec(get200hz);
@@ -284,6 +284,7 @@ int show_gif(const char * filename)
 			unsigned int freq[256];
 			unsigned int min_freq;
 			unsigned int used_colors;
+			unsigned int max_color;
 			UBYTE trans_tab[256];
 			UBYTE * p;
 
@@ -294,10 +295,11 @@ int show_gif(const char * filename)
 				freq[*p]++;
 			}
 			/* count # used colors */
-			for(used_colors = 0, i = 0; i < 256; i++) {
+			for(used_colors = 0, max_color = 0, i = 0; i < 256; i++) {
 				if(freq[i] != 0) {
 					used_colors++;
 					if(freq[i] < min_freq) min_freq = freq[i];
+					max_color = i;
 				}
 				trans_tab[i] = (UBYTE)i;	/* and init trans_tab */
 				/*if(freq[i] != 0) printf("%d %4d  #%02x%02x%02x\n", i, freq[i],
@@ -306,41 +308,41 @@ int show_gif(const char * filename)
 #ifdef SHOW_GIF_LOG
 			fprintf(log, " %uused", used_colors);
 #endif
-			while(used_colors > 16) {
-				int to_kick = 0;
-				int close_color = 0;
-				int min_diff = 0x7fff;
-				while(to_kick < gif->ncolors && (freq[to_kick] == 0 || freq[to_kick] > min_freq))
-					to_kick++;
-				/*printf("min_freq=%d to_kick = %d\n", min_freq, to_kick);*/
-				for(i = 0; i < gif->ncolors; i++) {
-					int diff;
-					if(i == to_kick) continue;
-					if(freq[i] == 0) continue;
+			if(max_color >= 16) {
+				UBYTE c;
+				while(used_colors > 16) {
+					int to_kick = 0;
+					int close_color = 0;
+					int min_diff = 0x7fff;
+					while(to_kick < gif->ncolors && (freq[to_kick] == 0 || freq[to_kick] > min_freq))
+						to_kick++;
+					/*printf("min_freq=%d to_kick = %d\n", min_freq, to_kick);*/
+					for(i = 0; i < gif->ncolors; i++) {
+						int diff;
+						if(i == to_kick) continue;
+						if(freq[i] == 0) continue;
 #if !defined(NGIFLIB_PALETTE_USE_BYTES)
-					diff = COLOR_DIFF(img->palette[to_kick], img->palette[i]);
+						diff = COLOR_DIFF(img->palette[to_kick], img->palette[i]);
 #else
-					diff = COLOR_DIFF(img->palette+to_kick*3, img->palette+i*3);
+						diff = COLOR_DIFF(img->palette+to_kick*3, img->palette+i*3);
 #endif
-					if(diff < min_diff) {
-						min_diff = diff;
-						close_color = i;
+						if(diff < min_diff) {
+							min_diff = diff;
+							close_color = i;
+						}
 					}
-				}
-				freq[close_color] += freq[to_kick];
-				freq[to_kick] = 0;
-				min_freq = 0xffff;
-				for(i = 0; i < gif->ncolors; i++) {
-					if(trans_tab[i] == to_kick) {
-						trans_tab[i] = close_color;
+					freq[close_color] += freq[to_kick];
+					freq[to_kick] = 0;
+					min_freq = 0xffff;
+					for(i = 0; i < gif->ncolors; i++) {
+						if(trans_tab[i] == to_kick) {
+							trans_tab[i] = close_color;
+						}
+						if(freq[i] != 0 && freq[i] < min_freq) min_freq = freq[i];
 					}
-					if(freq[i] != 0 && freq[i] < min_freq) min_freq = freq[i];
+					used_colors--;
 				}
-				used_colors--;
-			}
-			if(used_colors <= 16) {
-				UBYTE c = 0;
-				for(i = 0; i < 256; i++) {
+				for(i = 0, c = 0; i < 256 && c < 16; i++) {
 					if(freq[i] != 0) {
 						trans_tab[i] = c;
 #if !defined(NGIFLIB_PALETTE_USE_BYTES)
@@ -365,8 +367,6 @@ int show_gif(const char * filename)
 					*p = trans_tab[*p];
 				}
 				c2p((UWORD *)Physbase(), gif->frbuff.p8, gif->width, gif->height);
-			} else {
-				/* TODO : some color reduction ! */
 			}
 		}
 		if(line_word_count == 0) {
