@@ -23,11 +23,11 @@ VASMBIN=vasmm68k_mot
 # http://server.owl.de/~frank/tags/vbcc0_9e.tar.gz
 # http://server.owl.de/~frank/tags/vbcc0_9fP1.tar.gz
 #VBCCARCHIVE=vbcc.tar.gz
-VBCCARCHIVE=vbcc0_9fP1.tar.gz
+VBCCARCHIVE=vbcc0_9g.tar.gz
 #VBCCURL=http://www.ibaug.de/vbcc/$(VBCCARCHIVE)
 VBCCURL=http://server.owl.de/~frank/tags/$(VBCCARCHIVE)
 VBCCBIN=vc
-VBCCBASE=http://server.owl.de/~frank/vbcc/2017-08-14/
+VBCCBASE=http://server.owl.de/~frank/vbcc/2019-10-04/
 VBCCCONFIG=vbcc_unix_config.tar.gz
 VBCCTARGET=vbcc_target_m68k-atari.tar.gz
 
