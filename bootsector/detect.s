@@ -82,6 +82,19 @@ end
 	bsr.s	cconws
 	addq.l	#6,sp
 
+	; BLiTTER detection
+	move.w	#-1,-(sp)
+	move.w	#64,-(sp)	; Blitmode()
+	trap	#14	; XBIOS
+	addq.l	#4,sp
+
+	btst.l	#1,d0	; bit1 : blitter present, bit0 : blitter on
+	beq.s	.noblitter
+
+	lea	msgblitter(pc),a0
+	bsr.s	cconws
+.noblitter
+
 	lea	crlf(pc),a0
 
 	;move.w	#7,-(sp)	; Crawcin
@@ -140,5 +153,7 @@ msgstram
 msgkb
 	dc.b	'kB',13,10
 	dc.b	'TOS ',0
+msgblitter
+	dc.b	' BLiTTER present',0
 crlf
 	dc.b	13,10,0
